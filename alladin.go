@@ -1,7 +1,7 @@
 package alladin
 
 import (
-	"github.com/axewbotx/alladin/cmd"
+	"github.com/lovedeepsingh-07/alladin/cmd"
 )
 
 func Start() {
