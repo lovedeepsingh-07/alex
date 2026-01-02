@@ -1,40 +1,29 @@
 {
-  description = "alladin";
+  description = "alex";
   inputs = {
     nixpkgs.url =
-      "github:nixos/nixpkgs/2f9173bde1d3fbf1ad26ff6d52f952f9e9da52ea";
-    go_1_24_0-pkgs.url =
-      "github:nixos/nixpkgs/2d068ae5c6516b2d04562de50a58c682540de9bf";
-    flake-utils.url = "github:numtide/flake-utils";
+      "github:nixos/nixpkgs/d2ed99647a4b195f0bcc440f76edfa10aeb3b743";
+    rust-overlay = {
+      url =
+        "github:oxalica/rust-overlay/a9c35d6e7cb70c5719170b6c2d3bb589c5e048af";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+    flake-utils.url =
+      "github:numtide/flake-utils/11707dc2f618dd54ca8739b309ec4fc024de578b";
   };
-  outputs = { self, nixpkgs, flake-utils, ... }@inputs:
-    flake-utils.lib.eachDefaultSystem (system:
+  outputs = { ... }@inputs:
+    inputs.flake-utils.lib.eachDefaultSystem (system:
       let
-        overlays = [ ];
-        pkgs = import nixpkgs { inherit system overlays; };
-        go-pkgs = inputs.go_1_24_0-pkgs.legacyPackages.${system};
-
-        ctx = {
-          package = {
-            name = "alladin";
-            version = "0.0.1";
-            src = ./.;
-            go-mod = ./go.mod;
-          };
-          go = go-pkgs.go_1_24;
-          build-deps = [ pkgs.ffmpeg ];
+        pkgs = import inputs.nixpkgs {
+          inherit system;
+          overlays = [ (import inputs.rust-overlay) ];
         };
-
-        package = import ./nix/package.nix { inherit pkgs ctx; };
-
-        devShell = import ./nix/shell.nix { inherit pkgs ctx; };
+        rust-pkg = pkgs.rust-bin.stable."1.88.0".default;
       in {
         formatter = pkgs.nixfmt-classic;
-        devShells.default = devShell;
-        packages.default = package;
-        apps.default = {
-          type = "app";
-          program = "${package}/bin/${ctx.package.name}";
+        devShells.default = pkgs.mkShell {
+          nativeBuildInputs = [ rust-pkg pkgs.pkg-config pkgs.alsa-lib ];
+          shellHook = "zsh";
         };
       });
 }
