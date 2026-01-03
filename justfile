@@ -1,5 +1,5 @@
 build:
 	@cargo build
 
-run:
-	@cargo run
+run *args: build
+	./target/debug/alex {{args}}
