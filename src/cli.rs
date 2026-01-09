@@ -7,17 +7,19 @@ pub struct CliArgs {
 #[derive(Debug, clap::Subcommand)]
 pub enum SubCommand {
     Daemon,
-    Status,
-    Search,
+    Player(PlayerArgs)
 }
 
-// #[derive(Debug, clap::Args)]
-// pub struct StatusArgs {
-//     #[command(subcommand)]
-//     pub sub_command: StatusSubCommand,
-// }
-//
-// #[derive(Debug, clap::Subcommand)]
-// pub enum StatusSubCommand {
-//     Daemon,
-// }
+#[derive(Debug, clap::Args)]
+pub struct PlayerArgs {
+    #[command(subcommand)]
+    pub sub_command: PlayerSubCommand,
+}
+
+#[derive(Debug, clap::Subcommand)]
+pub enum PlayerSubCommand {
+    Play,
+    Pause,
+    Resume,
+    Clear
+}

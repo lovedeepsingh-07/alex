@@ -1,11 +1,13 @@
 pub enum Error {
     IOError(String),
+    ParseError(String),
 }
 
 impl std::string::ToString for Error {
     fn to_string(&self) -> String {
         match self {
             Error::IOError(err_str) => format!("IOError {}", err_str),
+            Error::ParseError(err_str) => format!("ParseError {}", err_str),
         }
     }
 }

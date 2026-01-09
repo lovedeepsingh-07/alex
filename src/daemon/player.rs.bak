@@ -1,0 +1,29 @@
+#[allow(dead_code)]
+pub struct Player {
+    pub output_stream: rodio::OutputStream,
+    pub playing_sink: rodio::Sink,
+    pub music_files: Vec<std::path::PathBuf>,
+}
+impl Player {
+    pub fn new() -> Self {
+        let home_dir = std::env::home_dir().unwrap();
+        let music_folder_path = home_dir.join("Music");
+        let mut music_files: Vec<std::path::PathBuf> = Vec::new();
+        for entry in walkdir::WalkDir::new(music_folder_path)
+            .into_iter()
+            .filter_map(|e| e.ok())
+        {
+            let entry = entry.path();
+            if entry.is_file() {
+                music_files.push(entry.to_path_buf());
+            };
+        }
+        let output_stream = rodio::OutputStreamBuilder::open_default_stream().unwrap();
+        let playing_sink = rodio::Sink::connect_new(&output_stream.mixer());
+        Player {
+            music_files,
+            output_stream,
+            playing_sink,
+        }
+    }
+}
