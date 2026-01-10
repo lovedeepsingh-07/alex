@@ -1,8 +1,7 @@
-mod command;
-mod player;
+pub mod command;
+pub mod player;
 
-use crate::{constants, error};
-use tokio::io::AsyncBufReadExt;
+use crate::{constants, error, request};
 
 #[derive(Debug)]
 pub struct Daemon {
@@ -35,26 +34,10 @@ impl Daemon {
         let listener = tokio::net::TcpListener::bind(constants::SERVER_ADDRESS).await?;
         loop {
             let (mut tcp_stream, _) = listener.accept().await?;
-            let mut reader = tokio::io::BufReader::new(&mut tcp_stream);
-            let mut line = String::new();
-            reader.read_line(&mut line).await?;
-
-            let line_parts = line.split(":").collect::<Vec<&str>>();
-            match line_parts[0] {
-                "PLAYER" => {
-                    if line_parts.len() != 2 {
-                        return Err(error::Error::ParseError("invalid protocol structure".to_string()))
-                    }
-                    match line_parts[1] {
-                        "PLAY" => self.sender.send(command::Command::PlayerPlay).unwrap(),
-                        "PAUSE" => self.sender.send(command::Command::PlayerPause).unwrap(),
-                        "RESUME" => self.sender.send(command::Command::PlayerResume).unwrap(),
-                        "CLEAR" => self.sender.send(command::Command::PlayerClear).unwrap(),
-                        _ => return Err(error::Error::ParseError("invalid protocol structure".to_string()))
-                    }
-                }
-                _ => return Err(error::Error::ParseError("invalid protocol structure".to_string()))
-            }
+            let mut request = request::Request::new();
+            request.read(&mut tcp_stream).await?;
+            let cmd = request.to_cmd()?;
+            self.sender.send(cmd).unwrap();
         }
     }
 }

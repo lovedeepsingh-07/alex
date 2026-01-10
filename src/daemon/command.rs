@@ -1,20 +1,38 @@
 use crate::daemon::player;
+use colored::Colorize;
 
 #[derive(Debug)]
 pub enum Command {
-    PlayerPlay,
+    Reload,
+    Search,
+    PlayerPlay(String),
     PlayerPause,
     PlayerResume,
-    PlayerClear
+    PlayerClear,
 }
 
 pub fn handle_command(cmd: Command, player: &mut player::Player) {
-    log::info!("{:#?}", cmd);
-    // player.play(player.music_files[0].clone();
-    // match cmd {
-    //     Command::PlayerPlay => {},
-    //     Command::PlayerPause => {},
-    //     Command::PlayerResume => {},
-    //     Command::PlayerClear => {},
-    // }
+    match cmd {
+        Command::Reload => {
+            log::info!("reloading player...");
+        }
+        Command::Search => {
+            for (label, _) in &player.audio_index {
+                println!("{} {}", "|".blue(), label);
+            }
+        }
+        Command::PlayerPlay(audio_label) => {
+            log::info!("playing {:#?}...", audio_label);
+            // player.play("back_in_black");
+        }
+        Command::PlayerPause => {
+            player.pause();
+        }
+        Command::PlayerResume => {
+            player.resume();
+        }
+        Command::PlayerClear => {
+            player.clear();
+        }
+    }
 }

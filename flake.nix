@@ -22,8 +22,20 @@
       in {
         formatter = pkgs.nixfmt-classic;
         devShells.default = pkgs.mkShell {
-          nativeBuildInputs = [ rust-pkg pkgs.pkg-config pkgs.alsa-lib ];
+          nativeBuildInputs = [ rust-pkg pkgs.pkg-config ];
+          buildInputs = [ pkgs.alsa-lib ];
           shellHook = "zsh";
+        };
+        packages.default = (pkgs.makeRustPlatform {
+          cargo = rust-pkg;
+          rustc = rust-pkg;
+        }).buildRustPackage {
+          pname = "alex";
+          version = "0.1.0";
+          src = ./.;
+          buildInputs = [ pkgs.alsa-lib ];
+          nativeBuildInputs = [ pkgs.pkg-config ];
+          cargoLock.lockFile = ./Cargo.lock;
         };
       });
 }

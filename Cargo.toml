@@ -5,6 +5,7 @@ edition = "2024"
 
 [dependencies]
 clap = { version = "4.5.53", features = ["derive"] }
+colored = "3.0.0"
 crossbeam = { version = "0.8.4", default-features = false, features = [
   "std",
   "crossbeam-channel",
