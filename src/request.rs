@@ -72,7 +72,7 @@ impl Request {
                     return Ok(command::Command::Search(Some(search_term.to_string())));
                 }
                 return Ok(command::Command::Search(None));
-            },
+            }
             "PLAYER" => {
                 let player_line = self.data.get(2).ok_or_else(|| {
                     error::Error::ParseError(

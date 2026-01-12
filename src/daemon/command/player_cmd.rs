@@ -10,10 +10,10 @@ pub fn handle(
 ) -> Result<(), error::Error> {
     match player_sub_command {
         command::PlayerSubCommand::Play(audio_label) => {
-            match player.play(&audio_label){
+            match player.play(&audio_label) {
                 Ok(_) => {
                     println!("{} {}", "> playing".green(), audio_label.blue());
-                },
+                }
                 Err(e) => {
                     log::error!("failed to play the song: {}", e.to_string());
                 }

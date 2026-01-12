@@ -19,13 +19,24 @@ impl Daemon {
     pub async fn run(&self) -> Result<(), error::Error> {
         let handler_rx = self.receiver.clone();
         tokio::spawn(async move {
-            let mut player = player::Player::new();
+            let mut player = match player::Player::new() {
+                Ok(out) => out,
+                Err(e) => {
+                    log::error!("{}", e.to_string());
+                    std::process::exit(1);
+                }
+            };
             loop {
                 match handler_rx.try_recv() {
-                    Ok(cmd) => command::handle(cmd, &mut player),
+                    Ok(cmd) => match command::handle(cmd, &mut player) {
+                        Ok(_) => {}
+                        Err(e) => {
+                            log::error!("Failed to handle command: {}", e.to_string());
+                        }
+                    },
                     Err(crossbeam::channel::TryRecvError::Empty) => {}
                     Err(crossbeam::channel::TryRecvError::Disconnected) => {
-                        log::error!("the channel is disconnected");
+                        log::error!("Failed to receive command, the channel is disconnected");
                     }
                 }
             }
@@ -37,7 +48,7 @@ impl Daemon {
             let mut request = request::Request::new();
             request.read(&mut tcp_stream).await?;
             let cmd = request.to_cmd()?;
-            self.sender.send(cmd).unwrap();
+            self.sender.send(cmd)?;
         }
     }
 }
