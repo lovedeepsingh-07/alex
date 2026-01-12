@@ -24,9 +24,8 @@ async fn main() {
         return;
     }
 
-    let mut request = request::Request::new();
-    match request.generate(cli_args.sub_command) {
-        Ok(_) => {}
+    let request = match cli::generate_request(cli_args.sub_command) {
+        Ok(out) => out,
         Err(e) => {
             log::error!("{}", e.to_string());
             std::process::exit(1);

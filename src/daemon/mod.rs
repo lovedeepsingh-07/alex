@@ -22,7 +22,7 @@ impl Daemon {
             let mut player = player::Player::new();
             loop {
                 match handler_rx.try_recv() {
-                    Ok(cmd) => command::handle_command(cmd, &mut player),
+                    Ok(cmd) => command::handle(cmd, &mut player),
                     Err(crossbeam::channel::TryRecvError::Empty) => {}
                     Err(crossbeam::channel::TryRecvError::Disconnected) => {
                         log::error!("the channel is disconnected");

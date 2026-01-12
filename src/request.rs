@@ -1,47 +1,19 @@
-use crate::{cli, constants, daemon::command, error};
+use crate::{constants, daemon::command, error};
 use tokio::io::AsyncBufReadExt;
 use tokio::io::AsyncWriteExt;
 
 #[derive(Debug)]
 pub struct Request {
     pub data: Vec<String>,
+    pub private_key_hash: String,
 }
 
 impl Request {
     pub fn new() -> Self {
-        Request { data: Vec::new() }
-    }
-
-    pub fn generate(&mut self, sub_command: cli::SubCommand) -> Result<(), error::Error> {
-        self.data.push(String::new());
-        match sub_command {
-            cli::SubCommand::Daemon => {}
-            cli::SubCommand::Reload => {
-                self.data.push("RELOAD".to_string());
-            }
-            cli::SubCommand::Search => {
-                self.data.push("SEARCH".to_string());
-            }
-            cli::SubCommand::Player { sub_command } => {
-                self.data.push("PLAYER".to_string());
-                match sub_command {
-                    cli::PlayerSubCommand::Play { audio_label } => {
-                        self.data.push("PLAY".to_string());
-                        self.data.push(audio_label);
-                    }
-                    cli::PlayerSubCommand::Pause => {
-                        self.data.push("PAUSE".to_string());
-                    }
-                    cli::PlayerSubCommand::Resume => {
-                        self.data.push("RESUME".to_string());
-                    }
-                    cli::PlayerSubCommand::Clear => {
-                        self.data.push("CLEAR".to_string());
-                    }
-                }
-            }
+        Request {
+            private_key_hash: blake3::hash(constants::PRIVATE_KEY.as_bytes()).to_string(),
+            data: Vec::new(),
         }
-        Ok(())
     }
     pub async fn send(&self) -> Result<(), error::Error> {
         let mut tcp_stream = tokio::net::TcpStream::connect(constants::SERVER_ADDRESS).await?;
@@ -70,6 +42,21 @@ impl Request {
             ));
         }
 
+        let private_key_hash = self
+            .data
+            .get(0)
+            .ok_or_else(|| {
+                error::Error::ParseError(
+                    "invalid protocol structure, missing the private key hash".to_string(),
+                )
+            })?
+            .to_string();
+        if private_key_hash != self.private_key_hash {
+            return Err(error::Error::ParseError(
+                "invalid protocol structure, incorrect private key hash".to_string(),
+            ));
+        }
+
         let command_line = self.data.get(1).ok_or_else(|| {
             error::Error::ParseError(
                 "invalid protocol structure, missing the command line".to_string(),
@@ -77,7 +64,15 @@ impl Request {
         })?;
         match command_line.as_str() {
             "RELOAD" => return Ok(command::Command::Reload),
-            "SEARCH" => return Ok(command::Command::Search),
+            "SEARCH" => {
+                if let Some(search_term) = self.data.get(2) {
+                    if search_term.trim().len() != 0 {
+                        return Ok(command::Command::Search(Some(search_term.to_string())));
+                    }
+                    return Ok(command::Command::Search(Some(search_term.to_string())));
+                }
+                return Ok(command::Command::Search(None));
+            },
             "PLAYER" => {
                 let player_line = self.data.get(2).ok_or_else(|| {
                     error::Error::ParseError(
@@ -91,11 +86,19 @@ impl Request {
                                 "invalid protocol structure, missing the player line".to_string(),
                             )
                         })?;
-                        return Ok(command::Command::PlayerPlay(audio_label.clone()));
+                        return Ok(command::Command::Player(command::PlayerSubCommand::Play(
+                            audio_label.clone(),
+                        )));
                     }
-                    "PAUSE" => return Ok(command::Command::PlayerPause),
-                    "RESUME" => return Ok(command::Command::PlayerResume),
-                    "CLEAR" => return Ok(command::Command::PlayerClear),
+                    "PAUSE" => {
+                        return Ok(command::Command::Player(command::PlayerSubCommand::Pause));
+                    }
+                    "RESUME" => {
+                        return Ok(command::Command::Player(command::PlayerSubCommand::Resume));
+                    }
+                    "CLEAR" => {
+                        return Ok(command::Command::Player(command::PlayerSubCommand::Clear));
+                    }
                     _ => {
                         return Err(error::Error::ParseError(
                             "invalid protocol structure".to_string(),
@@ -111,36 +114,3 @@ impl Request {
         }
     }
 }
-// let line_parts = line.split(":").collect::<Vec<&str>>();
-// match line_parts[0] {
-//     "RELOAD" => self.sender.send(command::Command::Reload).unwrap(),
-//     "SEARCH" => self.sender.send(command::Command::Search).unwrap(),
-//     "PLAYER" => {
-//         if line_parts.len() < 2 {
-//             return Err(error::Error::ParseError(
-//                 "invalid protocol structure".to_string(),
-//             ));
-//         }
-//         match line_parts[1] {
-//             "PLAY" => {
-//                 let audio_label = line_parts.get(2).ok_or_else(|| {
-//                     error::Error::ParseError("invalid protocol structure".to_string())
-//                 })?;
-//                 self.sender.send(command::Command::PlayerPlay(audio_label.to_string())).unwrap()
-//             }
-//             "PAUSE" => self.sender.send(command::Command::PlayerPause).unwrap(),
-//             "RESUME" => self.sender.send(command::Command::PlayerResume).unwrap(),
-//             "CLEAR" => self.sender.send(command::Command::PlayerClear).unwrap(),
-//             _ => {
-//                 return Err(error::Error::ParseError(
-//                     "invalid protocol structure".to_string(),
-//                 ));
-//             }
-//         }
-//     }
-//     _ => {
-//         return Err(error::Error::ParseError(
-//             "invalid protocol structure".to_string(),
-//         ));
-//     }
-// }

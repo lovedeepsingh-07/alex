@@ -12,46 +12,52 @@ pub struct Player {
     curr_audio: Option<std::path::PathBuf>,
 }
 
-pub fn index_audio_files() -> Result<AudioIndex, error::Error> {
-    let mut audio_index: AudioIndex = HashMap::new();
-
-    let home_dir = std::env::home_dir().unwrap();
-    let music_folder_path = home_dir.join("Music");
-    for entry in walkdir::WalkDir::new(music_folder_path)
-        .into_iter()
-        .filter_map(|e| e.ok())
-    {
-        let entry = entry.path();
-        if entry.is_file() {
-            let file_name = entry.file_name().unwrap().to_string_lossy().to_string();
-            let extension = entry.extension().unwrap().to_string_lossy().to_string();
-            let label = file_name.strip_suffix(&format!(".{}", extension)).unwrap();
-            audio_index.insert(label.to_string(), entry.to_path_buf());
-        };
-    }
-
-    Ok(audio_index)
-}
-
 impl Player {
     pub fn new() -> Self {
         let output_stream = rodio::OutputStreamBuilder::open_default_stream().unwrap();
         let sink = rodio::Sink::connect_new(&output_stream.mixer());
-        let audio_index = index_audio_files().unwrap();
-
-        Player {
+        let mut player = Player {
             output_stream,
             sink,
             curr_audio: None,
-            audio_index,
-        }
+            audio_index: HashMap::new(),
+        };
+        player.index_audio_files().unwrap();
+        player
     }
-    pub fn play(&mut self, audio_label: &str) {
-        let audio_path = self.audio_index.get(audio_label).unwrap().clone();
+    pub fn index_audio_files(&mut self) -> Result<(), error::Error> {
+        let home_dir = std::env::home_dir().unwrap();
+        let music_folder_path = home_dir.join("Music");
+        for entry in walkdir::WalkDir::new(music_folder_path)
+            .into_iter()
+            .filter_map(|e| e.ok())
+        {
+            let entry = entry.path();
+            if entry.is_file() {
+                let file_name = entry.file_name().unwrap().to_string_lossy().to_string();
+                let extension = entry.extension().unwrap().to_string_lossy().to_string();
+                if !["ogg"].contains(&extension.as_str()) {
+                    continue;
+                }
+                let label = file_name.strip_suffix(&format!(".{}", extension)).unwrap();
+                self.audio_index
+                    .insert(label.to_string(), entry.to_path_buf());
+            };
+        }
+        Ok(())
+    }
+
+    pub fn play(&mut self, audio_label: &str) -> Result<(), error::Error> {
+        let audio_path = self.audio_index.get(audio_label).ok_or_else(|| error::Error::NotFoundError("the requested audio filese does not exist".to_string()))?.clone();
         self.clear();
         let audio_file = std::fs::File::open(&audio_path).unwrap();
-        let audio_source = rodio::Decoder::try_from(audio_file).unwrap();
+        let audio_source = rodio::Decoder::builder()
+            .with_data(audio_file)
+            .build()
+            .unwrap();
+        // let audio_source = rodio::Decoder::try_from(audio_file).unwrap();
         self.sink.append(audio_source);
+        Ok(())
     }
     pub fn clear(&mut self) {
         self.sink.stop();

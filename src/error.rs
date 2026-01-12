@@ -2,6 +2,7 @@
 pub enum Error {
     IOError(String),
     ParseError(String),
+    NotFoundError(String)
 }
 
 impl std::string::ToString for Error {
@@ -9,6 +10,7 @@ impl std::string::ToString for Error {
         match self {
             Error::IOError(err_str) => format!("IOError {}", err_str),
             Error::ParseError(err_str) => format!("ParseError {}", err_str),
+            Error::NotFoundError(err_str) => format!("NotFoundError {}", err_str),
         }
     }
 }
