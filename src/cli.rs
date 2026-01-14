@@ -37,7 +37,6 @@ pub fn generate_request(sub_command: SubCommand) -> Result<request::Request, err
             request.data.push("RELOAD".to_string());
         }
         SubCommand::Search { search_term } => {
-            println!("{:#?}", search_term);
             request.data.push("SEARCH".to_string());
             if let Some(search_term) = search_term {
                 request.data.push(search_term);

@@ -1,6 +1,5 @@
 use crate::{constants, daemon::command, error};
 use tokio::io::AsyncBufReadExt;
-use tokio::io::AsyncWriteExt;
 
 #[derive(Debug)]
 pub struct Request {
@@ -15,14 +14,6 @@ impl Request {
             data: Vec::new(),
         }
     }
-    pub async fn send(&self) -> Result<(), error::Error> {
-        let mut tcp_stream = tokio::net::TcpStream::connect(constants::SERVER_ADDRESS).await?;
-        tcp_stream
-            .write_all(self.data.join("\n").as_bytes())
-            .await?;
-        Ok(())
-    }
-
     pub async fn read(
         &mut self,
         tcp_stream: &mut tokio::net::TcpStream,

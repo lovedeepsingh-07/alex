@@ -6,6 +6,7 @@ pub mod request;
 pub mod response;
 
 use clap::Parser;
+use tokio::io::AsyncWriteExt;
 
 #[tokio::main]
 async fn main() {
@@ -31,7 +32,19 @@ async fn main() {
             std::process::exit(1);
         }
     };
-    match request.send().await {
+    match async {
+        let mut tcp_stream = tokio::net::TcpStream::connect(constants::SERVER_ADDRESS).await?;
+        tcp_stream
+            .write_all(request.data.join("\n").as_bytes())
+            .await?;
+        // NOTE: this is important to ensure anyone reading from this stream does not loop
+        // forever, it ensure EOF is reached on the reader side, by shutting down the writer
+        tcp_stream.shutdown().await?;
+        let mut response = response::Response::new();
+        response.read(&mut tcp_stream).await?;
+        println!("response that I got: {:#?}", response);
+        Ok::<(), error::Error>(())
+    }.await {
         Ok(_) => {}
         Err(e) => {
             log::error!("{}", e.to_string());

@@ -5,6 +5,7 @@ pub enum Error {
     ParseError(String),
     NotFoundError(String),
     ChannelSendError(String),
+    ChannelReceiveError(String),
     StreamError(String),
     DecoderError(String),
 }
@@ -17,6 +18,7 @@ impl std::string::ToString for Error {
             Error::ParseError(err_str) => format!("ParseError {}", err_str),
             Error::NotFoundError(err_str) => format!("NotFoundError {}", err_str),
             Error::ChannelSendError(err_str) => format!("ChannelSendError {}", err_str),
+            Error::ChannelReceiveError(err_str) => format!("ChannelReceiveError {}", err_str),
             Error::StreamError(err_str) => format!("StreamError {}", err_str),
             Error::DecoderError(err_str) => format!("DecoderError {}", err_str),
         }
@@ -31,6 +33,11 @@ impl From<std::io::Error> for Error {
 impl<T> From<crossbeam::channel::SendError<T>> for Error {
     fn from(value: crossbeam::channel::SendError<T>) -> Self {
         Error::ChannelSendError(value.to_string())
+    }
+}
+impl From<crossbeam::channel::RecvError> for Error {
+    fn from(value: crossbeam::channel::RecvError) -> Self {
+        Error::ChannelReceiveError(value.to_string())
     }
 }
 impl From<rodio::stream::StreamError> for Error {
