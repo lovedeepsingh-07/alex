@@ -30,16 +30,16 @@ impl From<std::io::Error> for Error {
         Error::IOError(value.to_string())
     }
 }
-impl<T> From<crossbeam::channel::SendError<T>> for Error {
-    fn from(value: crossbeam::channel::SendError<T>) -> Self {
+impl<T> From<tokio::sync::mpsc::error::SendError<T>> for Error {
+    fn from(value: tokio::sync::mpsc::error::SendError<T>) -> Self {
         Error::ChannelSendError(value.to_string())
     }
 }
-impl From<crossbeam::channel::RecvError> for Error {
-    fn from(value: crossbeam::channel::RecvError) -> Self {
-        Error::ChannelReceiveError(value.to_string())
-    }
-}
+// impl From<crossbeam::channel::RecvError> for Error {
+//     fn from(value: crossbeam::channel::RecvError) -> Self {
+//         Error::ChannelReceiveError(value.to_string())
+//     }
+// }
 impl From<rodio::stream::StreamError> for Error {
     fn from(value: rodio::stream::StreamError) -> Self {
         Error::StreamError(value.to_string())

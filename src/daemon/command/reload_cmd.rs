@@ -1,7 +1,14 @@
-use crate::{daemon::player, error};
+use crate::{daemon::player, error, response};
+use tokio::sync::mpsc;
 
-pub fn handle(player: &mut player::Player) -> Result<(), error::Error> {
+pub async fn handle(
+    respnose_tx: mpsc::Sender<response::Response>,
+    player: &mut player::Player,
+) -> Result<(), error::Error> {
     log::info!("reloading player");
     player.index_audio_files()?;
+    let mut response = response::Response::new();
+    response.data.push("OK".to_string());
+    response.data.push("SEARCH".to_string());
     Ok(())
 }

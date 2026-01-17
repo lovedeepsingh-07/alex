@@ -15,20 +15,19 @@ async fn main() {
 
     let cli_args = cli::CliArgs::parse();
     if cli_args.sub_command == cli::SubCommand::Daemon {
-        let daemon = daemon::Daemon::new();
-        match daemon.run().await {
+        match daemon::run().await {
             Ok(_) => {}
             Err(e) => {
-                log::error!("{}", e.to_string());
+                log::error!("Failed to run daemon, {}", e.to_string());
             }
-        };
+        }
         return;
     }
 
     let request = match cli::generate_request(cli_args.sub_command) {
         Ok(out) => out,
         Err(e) => {
-            log::error!("{}", e.to_string());
+            log::error!("Failed to generate request, {}", e.to_string());
             std::process::exit(1);
         }
     };
@@ -44,11 +43,12 @@ async fn main() {
         response.read(&mut tcp_stream).await?;
         println!("response that I got: {:#?}", response);
         Ok::<(), error::Error>(())
-    }.await {
+    }
+    .await
+    {
         Ok(_) => {}
         Err(e) => {
-            log::error!("{}", e.to_string());
-            std::process::exit(1);
+            log::error!("Failed to make request, {}", e.to_string());
         }
     };
 }

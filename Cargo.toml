@@ -7,10 +7,6 @@ edition = "2024"
 blake3 = "1.8.3"
 clap = { version = "4.5.53", features = ["derive"] }
 colored = "3.0.0"
-crossbeam = { version = "0.8.4", default-features = false, features = [
-  "std",
-  "crossbeam-channel",
-] }
 env_logger = "0.11.8"
 log = "0.4.29"
 rodio = "0.21.1"

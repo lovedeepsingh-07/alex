@@ -1,19 +1,19 @@
 use crate::{daemon::player, error, response};
+use tokio::sync::mpsc;
 
-pub fn handle(
-    response_sender: crossbeam::channel::Sender::<response::Response>,
+pub async fn handle(
+    response_tx: mpsc::Sender<response::Response>,
     player: &mut player::Player,
     search_term: Option<String>,
 ) -> Result<(), error::Error> {
     match search_term {
         Some(_search_term) => {
             log::warn!("searching with a term is not implemented yet");
-            response_sender.send(response::Response {
-                data: vec![
-                    "ERROR".to_string(),
-                    "SEARCH".to_string(),
-                ],
-            })?;
+            response_tx
+                .send(response::Response {
+                    data: vec!["ERROR".to_string(), "SEARCH".to_string()],
+                })
+                .await?;
         }
         None => {
             let mut response = response::Response::new();
@@ -22,7 +22,7 @@ pub fn handle(
             for (label, _) in &player.audio_index {
                 response.data.push(label.clone());
             }
-            response_sender.send(response)?;
+            response_tx.send(response).await?;
         }
     }
     Ok(())

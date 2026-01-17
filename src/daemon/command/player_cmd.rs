@@ -1,10 +1,12 @@
 use crate::{
     daemon::{command, player},
-    error,
+    error, response,
 };
 use colored::Colorize;
+use tokio::sync::mpsc;
 
-pub fn handle(
+pub async fn handle(
+    response_tx: mpsc::Sender<response::Response>,
     player: &mut player::Player,
     player_sub_command: command::PlayerSubCommand,
 ) -> Result<(), error::Error> {
