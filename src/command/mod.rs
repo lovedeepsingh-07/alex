@@ -2,10 +2,7 @@ mod player_cmd;
 mod reload_cmd;
 mod search_cmd;
 
-use crate::{
-    daemon::{self, player},
-    error,
-};
+use crate::{daemon, error, player};
 
 #[derive(Debug)]
 pub enum Command {
@@ -22,7 +19,7 @@ pub enum PlayerSubCommand {
 }
 
 pub async fn handle(
-    command_response_handle: daemon::CommandResponseHandle,
+    command_response_handle: daemon::CR_Handle,
     player: &mut player::Player,
 ) -> Result<(), error::Error> {
     match command_response_handle.command {

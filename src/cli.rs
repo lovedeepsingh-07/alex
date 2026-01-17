@@ -1,4 +1,4 @@
-use crate::{error, request};
+use crate::{error, protocol::request};
 
 #[derive(Debug, clap::Parser)]
 pub struct CliArgs {
@@ -10,17 +10,7 @@ pub struct CliArgs {
 pub enum SubCommand {
     Daemon,
     Reload,
-    Search {
-        search_term: Option<String>,
-    },
-    Player {
-        #[command(subcommand)]
-        sub_command: PlayerSubCommand,
-    },
-}
-
-#[derive(Debug, clap::Subcommand, PartialEq)]
-pub enum PlayerSubCommand {
+    Search { search_term: Option<String> },
     Play { audio_label: String },
     Pause,
     Resume,
@@ -42,23 +32,25 @@ pub fn generate_request(sub_command: SubCommand) -> Result<request::Request, err
                 request.data.push(search_term);
             }
         }
-        SubCommand::Player { sub_command } => {
-            request.data.push("PLAYER".to_string());
-            match sub_command {
-                PlayerSubCommand::Play { audio_label } => {
-                    request.data.push("PLAY".to_string());
-                    request.data.push(audio_label);
-                }
-                PlayerSubCommand::Pause => {
-                    request.data.push("PAUSE".to_string());
-                }
-                PlayerSubCommand::Resume => {
-                    request.data.push("RESUME".to_string());
-                }
-                PlayerSubCommand::Clear => {
-                    request.data.push("CLEAR".to_string());
-                }
-            }
+        SubCommand::Play { audio_label } => {
+            request
+                .data
+                .extend(vec!["PLAYER".to_string(), "PLAY".to_string(), audio_label]);
+        }
+        SubCommand::Resume => {
+            request
+                .data
+                .extend(vec!["PLAYER".to_string(), "RESUME".to_string()]);
+        }
+        SubCommand::Pause => {
+            request
+                .data
+                .extend(vec!["PLAYER".to_string(), "PAUSE".to_string()]);
+        }
+        SubCommand::Clear => {
+            request
+                .data
+                .extend(vec!["PLAYER".to_string(), "CLEAR".to_string()]);
         }
     }
     Ok(request)

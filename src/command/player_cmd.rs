@@ -1,7 +1,4 @@
-use crate::{
-    daemon::{command, player},
-    error, response,
-};
+use crate::{command, error, player, response};
 use colored::Colorize;
 use tokio::sync::mpsc;
 

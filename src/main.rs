@@ -1,11 +1,13 @@
 pub mod cli;
+pub mod command;
 pub mod constants;
 pub mod daemon;
 pub mod error;
-pub mod request;
-pub mod response;
+pub mod player;
+pub mod protocol;
 
 use clap::Parser;
+use protocol::response;
 use tokio::io::AsyncWriteExt;
 
 #[tokio::main]
@@ -24,31 +26,24 @@ async fn main() {
         return;
     }
 
-    let request = match cli::generate_request(cli_args.sub_command) {
-        Ok(out) => out,
-        Err(e) => {
-            log::error!("Failed to generate request, {}", e.to_string());
-            std::process::exit(1);
-        }
-    };
-    match async {
-        let mut tcp_stream = tokio::net::TcpStream::connect(constants::SERVER_ADDRESS).await?;
-        tcp_stream
-            .write_all(request.data.join("\n").as_bytes())
-            .await?;
-        // NOTE: this is important to ensure anyone reading from this stream does not loop
-        // forever, it ensure EOF is reached on the reader side, by shutting down the writer
-        tcp_stream.shutdown().await?;
-        let mut response = response::Response::new();
-        response.read(&mut tcp_stream).await?;
-        println!("response that I got: {:#?}", response);
-        Ok::<(), error::Error>(())
-    }
-    .await
-    {
+    match connect(cli_args.sub_command).await {
         Ok(_) => {}
         Err(e) => {
             log::error!("Failed to make request, {}", e.to_string());
         }
     };
+}
+
+async fn connect(sub_command: cli::SubCommand) -> Result<(), error::Error> {
+    let request = cli::generate_request(sub_command)?;
+    let mut tcp_stream = tokio::net::TcpStream::connect(constants::SERVER_ADDRESS).await?;
+    tcp_stream.write_all(&request.to_bytes()).await?;
+
+    // NOTE: this is important to ensure anyone reading from this stream does not loop
+    // forever, it ensure EOF is reached on the "reader" side, by shutting down the "writer"
+    tcp_stream.shutdown().await?;
+
+    let response = response::Response::from_stream(&mut tcp_stream).await?;
+    println!("response that I got: {:#?}", response);
+    Ok(())
 }
