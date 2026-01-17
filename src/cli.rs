@@ -1,13 +1,13 @@
 use crate::{error, protocol::request};
 
 #[derive(Debug, clap::Parser)]
-pub struct CliArgs {
+pub(crate) struct CliArgs {
     #[command(subcommand)]
-    pub sub_command: SubCommand,
+    pub(crate) sub_command: SubCommand,
 }
 
 #[derive(Debug, clap::Subcommand, PartialEq)]
-pub enum SubCommand {
+pub(crate) enum SubCommand {
     Daemon,
     Reload,
     Search { search_term: Option<String> },
@@ -17,7 +17,7 @@ pub enum SubCommand {
     Clear,
 }
 
-pub fn generate_request(sub_command: SubCommand) -> Result<request::Request, error::Error> {
+pub(crate) fn generate_request(sub_command: SubCommand) -> Result<request::Request, error::Error> {
     let mut request = request::Request::new();
     request.data.push(request.private_key_hash.clone());
 

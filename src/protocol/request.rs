@@ -2,19 +2,21 @@ use crate::{command, constants, error};
 use tokio::io::AsyncBufReadExt;
 
 #[derive(Debug)]
-pub struct Request {
-    pub data: Vec<String>,
-    pub private_key_hash: String,
+pub(crate) struct Request {
+    pub(crate) data: Vec<String>,
+    pub(crate) private_key_hash: String,
 }
 
 impl Request {
-    pub fn new() -> Self {
+    pub(crate) fn new() -> Self {
         Request {
             private_key_hash: blake3::hash(constants::PRIVATE_KEY.as_bytes()).to_string(),
             data: Vec::new(),
         }
     }
-    pub async fn from_stream(tcp_stream: &mut tokio::net::TcpStream) -> Result<Self, error::Error> {
+    pub(crate) async fn from_stream(
+        tcp_stream: &mut tokio::net::TcpStream,
+    ) -> Result<Self, error::Error> {
         let mut value = Self::new();
         let reader = tokio::io::BufReader::new(tcp_stream);
         let mut lines = reader.lines();
@@ -23,10 +25,10 @@ impl Request {
         }
         Ok(value)
     }
-    pub fn to_bytes(&self) -> Vec<u8> {
+    pub(crate) fn to_bytes(&self) -> Vec<u8> {
         self.data.join("\n").into_bytes()
     }
-    pub fn to_cmd(&self) -> Result<command::Command, error::Error> {
+    pub(crate) fn to_cmd(&self) -> Result<command::Command, error::Error> {
         let total_lines = self.data.len();
         if total_lines == 0 {
             return Err(error::Error::ProtocolError(

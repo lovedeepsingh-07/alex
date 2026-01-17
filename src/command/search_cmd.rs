@@ -1,29 +1,25 @@
-use crate::{error, player, response};
-use tokio::sync::mpsc;
+use crate::{error, player, protocol::response};
 
-pub async fn handle(
-    response_tx: mpsc::Sender<response::Response>,
+pub(crate) async fn handle(
     player: &mut player::Player,
     search_term: Option<String>,
-) -> Result<(), error::Error> {
+) -> Result<response::Response, error::Error> {
     match search_term {
         Some(_search_term) => {
             log::warn!("searching with a term is not implemented yet");
-            response_tx
-                .send(response::Response {
-                    data: vec!["ERROR".to_string(), "SEARCH".to_string()],
-                })
-                .await?;
+            return Ok(response::Response {
+                data: vec!["ERROR".to_string(), "SEARCH".to_string()],
+            });
         }
         None => {
+            log::debug!("Searching for audio files");
             let mut response = response::Response::new();
             response.data.push("OK".to_string());
             response.data.push("SEARCH".to_string());
             for (label, _) in &player.audio_index {
                 response.data.push(label.clone());
             }
-            response_tx.send(response).await?;
+            return Ok(response);
         }
     }
-    Ok(())
 }

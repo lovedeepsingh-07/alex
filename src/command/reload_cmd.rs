@@ -1,14 +1,12 @@
-use crate::{error, player, response};
-use tokio::sync::mpsc;
+use crate::{error, player, protocol::response};
 
-pub async fn handle(
-    respnose_tx: mpsc::Sender<response::Response>,
+pub(crate) async fn handle(
     player: &mut player::Player,
-) -> Result<(), error::Error> {
-    log::info!("reloading player");
+) -> Result<response::Response, error::Error> {
+    log::debug!("Reloading player audio index");
     player.index_audio_files()?;
-    let mut response = response::Response::new();
-    response.data.push("OK".to_string());
-    response.data.push("SEARCH".to_string());
-    Ok(())
+    let response = response::Response {
+        data: vec!["OK".to_string(), "RELOAD".to_string()],
+    };
+    Ok(response)
 }

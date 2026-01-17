@@ -1,13 +1,12 @@
-pub mod cli;
-pub mod command;
-pub mod constants;
-pub mod daemon;
-pub mod error;
-pub mod player;
-pub mod protocol;
+pub(crate) mod cli;
+pub(crate) mod command;
+pub(crate) mod constants;
+pub(crate) mod daemon;
+pub(crate) mod error;
+pub(crate) mod player;
+pub(crate) mod protocol;
 
 use clap::Parser;
-use protocol::response;
 use tokio::io::AsyncWriteExt;
 
 #[tokio::main]
@@ -43,7 +42,7 @@ async fn connect(sub_command: cli::SubCommand) -> Result<(), error::Error> {
     // forever, it ensure EOF is reached on the "reader" side, by shutting down the "writer"
     tcp_stream.shutdown().await?;
 
-    let response = response::Response::from_stream(&mut tcp_stream).await?;
+    let response = protocol::response::Response::from_stream(&mut tcp_stream).await?;
     println!("response that I got: {:#?}", response);
     Ok(())
 }

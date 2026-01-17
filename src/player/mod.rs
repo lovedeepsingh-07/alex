@@ -1,19 +1,19 @@
-pub mod index;
+pub(crate) mod index;
 
 use crate::error;
 use std::collections::HashMap;
 
-pub struct Player {
+pub(crate) struct Player {
     #[allow(dead_code)]
     output_stream: rodio::OutputStream,
     sink: rodio::Sink,
-    pub audio_index: index::AudioIndex,
+    pub(crate) audio_index: index::AudioIndex,
     #[allow(dead_code)]
     curr_audio: Option<std::path::PathBuf>,
 }
 
 impl Player {
-    pub fn new() -> Result<Self, error::Error> {
+    pub(crate) fn new() -> Result<Self, error::Error> {
         let output_stream = rodio::OutputStreamBuilder::open_default_stream()?;
         let sink = rodio::Sink::connect_new(&output_stream.mixer());
         let mut player = Player {
@@ -25,11 +25,11 @@ impl Player {
         player.index_audio_files()?;
         Ok(player)
     }
-    pub fn index_audio_files(&mut self) -> Result<(), error::Error> {
+    pub(crate) fn index_audio_files(&mut self) -> Result<(), error::Error> {
         self.audio_index = index::index_audio_files()?;
         Ok(())
     }
-    pub fn play(&mut self, audio_label: &str) -> Result<(), error::Error> {
+    pub(crate) fn play(&mut self, audio_label: &str) -> Result<(), error::Error> {
         let audio_path = self
             .audio_index
             .get(audio_label)
@@ -44,13 +44,13 @@ impl Player {
         self.sink.append(audio_source);
         Ok(())
     }
-    pub fn clear(&mut self) {
+    pub(crate) fn clear(&mut self) {
         self.sink.stop();
     }
-    pub fn resume(&mut self) {
+    pub(crate) fn resume(&mut self) {
         self.sink.play();
     }
-    pub fn pause(&self) {
+    pub(crate) fn pause(&self) {
         self.sink.pause();
     }
 }
