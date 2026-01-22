@@ -3,7 +3,7 @@ use tokio::io::AsyncBufReadExt;
 
 #[derive(Debug)]
 pub(crate) struct Response {
-    pub data: Vec<String>,
+    pub(crate) data: Vec<String>,
 }
 
 impl Response {

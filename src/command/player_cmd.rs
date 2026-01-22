@@ -1,4 +1,5 @@
 use crate::{command, error, player, protocol::response};
+use colored::Colorize;
 
 pub(crate) async fn handle(
     player: &mut player::Player,
@@ -9,11 +10,15 @@ pub(crate) async fn handle(
         command::PlayerSubCommand::Play(audio_label) => {
             match player.play(&audio_label) {
                 Ok(_) => {
-                    log::debug!("Playing {:#?}", audio_label);
+                    log::debug!(
+                        "Playing {quote}{}{quote}",
+                        audio_label.purple(),
+                        quote = "\"".purple()
+                    );
                     response_data.push("PLAY".to_string());
                 }
                 Err(e) => {
-                    log::error!("failed to play the song: {}", e.to_string());
+                    log::error!("Failed to play the audio: {}", e.to_string());
                 }
             };
         }

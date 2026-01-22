@@ -1,11 +1,13 @@
 mod player_cmd;
 mod reload_cmd;
 mod search_cmd;
+mod status_cmd;
 
 use crate::{error, player, protocol::response};
 
 #[derive(Debug)]
 pub(crate) enum Command {
+    Status,
     Reload,
     Search(Option<String>),
     Player(PlayerSubCommand),
@@ -23,6 +25,7 @@ pub(crate) async fn handle(
     player: &mut player::Player,
 ) -> Result<response::Response, error::Error> {
     match command {
+        Command::Status => status_cmd::handle(player).await,
         Command::Reload => reload_cmd::handle(player).await,
         Command::Search(search_term) => search_cmd::handle(player, search_term).await,
         Command::Player(player_sub_command) => player_cmd::handle(player, player_sub_command).await,

@@ -9,6 +9,7 @@ pub(crate) struct CliArgs {
 #[derive(Debug, clap::Subcommand, PartialEq)]
 pub(crate) enum SubCommand {
     Daemon,
+    Status,
     Reload,
     Search { search_term: Option<String> },
     Play { audio_label: String },
@@ -23,6 +24,9 @@ pub(crate) fn generate_request(sub_command: SubCommand) -> Result<request::Reque
 
     match sub_command {
         SubCommand::Daemon => {}
+        SubCommand::Status => {
+            request.data.push("STATUS".to_string());
+        },
         SubCommand::Reload => {
             request.data.push("RELOAD".to_string());
         }

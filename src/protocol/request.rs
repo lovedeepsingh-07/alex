@@ -52,13 +52,14 @@ impl Request {
             .get(1)
             .ok_or_else(|| error::Error::ProtocolError("Missing the command line".to_string()))?;
         match command_line.as_str() {
+            "STATUS" => return Ok(command::Command::Status),
             "RELOAD" => return Ok(command::Command::Reload),
             "SEARCH" => {
                 if let Some(search_term) = self.data.get(2) {
                     if search_term.trim().len() != 0 {
                         return Ok(command::Command::Search(Some(search_term.to_string())));
                     }
-                    return Ok(command::Command::Search(Some(search_term.to_string())));
+                    return Ok(command::Command::Search(None));
                 }
                 return Ok(command::Command::Search(None));
             }

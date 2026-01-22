@@ -43,6 +43,17 @@ async fn connect(sub_command: cli::SubCommand) -> Result<(), error::Error> {
     tcp_stream.shutdown().await?;
 
     let response = protocol::response::Response::from_stream(&mut tcp_stream).await?;
-    println!("response that I got: {:#?}", response);
+    println!("{:#?}", response);
+    if let Some(command_line) = response.data.get(1) {
+        match command_line.as_str() {
+            "STATUS" => {
+                if let Some(status_line) = response.data.get(2) {
+                    println!("{:#?}", serde_json::from_str::<player::PlayerState>(&status_line).unwrap())
+                }
+            },
+            _ => {}
+        }
+    }
+
     Ok(())
 }

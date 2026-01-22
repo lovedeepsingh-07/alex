@@ -16,7 +16,7 @@ pub(crate) async fn handle(
             let mut response = response::Response::new();
             response.data.push("OK".to_string());
             response.data.push("SEARCH".to_string());
-            for (label, _) in &player.audio_index {
+            for (label, _) in &player.index {
                 response.data.push(label.clone());
             }
             return Ok(response);

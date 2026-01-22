@@ -10,6 +10,8 @@ pub(crate) async fn run() -> Result<(), error::Error> {
 
     loop {
         let (mut tcp_stream, _) = listener.accept().await?;
+        player.update_state()?;
+
         let request = request::Request::from_stream(&mut tcp_stream).await?;
         let cmd = request.to_cmd()?;
 

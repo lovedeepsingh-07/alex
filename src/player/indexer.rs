@@ -1,10 +1,14 @@
 use crate::error;
 use std::collections::HashMap;
 
-pub(crate) type AudioIndex = HashMap<String, std::path::PathBuf>;
+pub(crate) struct Audio {
+    pub(crate) path: std::path::PathBuf,
+}
+
+pub(crate) type AudioIndex = HashMap<String, Audio>;
 
 pub(crate) fn index_audio_files() -> Result<AudioIndex, error::Error> {
-    let mut audio_index = HashMap::new();
+    let mut index = HashMap::new();
     let home_dir = std::env::home_dir().ok_or_else(|| {
         error::Error::FSError("Failed to get the home directory path".to_string())
     })?;
@@ -38,8 +42,13 @@ pub(crate) fn index_audio_files() -> Result<AudioIndex, error::Error> {
                 Some(out) => out,
                 None => file_name.as_str(),
             };
-            audio_index.insert(label.to_string(), entry.to_path_buf());
+            index.insert(
+                label.to_string(),
+                Audio {
+                    path: entry.to_path_buf(),
+                },
+            );
         };
     }
-    Ok(audio_index)
+    Ok(index)
 }

@@ -15,10 +15,8 @@
         overlays = [(import inputs.rust_overlay)];
       };
       rust_pkg = pkgs.rust-bin.stable."1.88.0".default;
-      shell = import ./_nix/shell.nix {inherit pkgs rust_pkg;};
-      alex = import ./_nix/alex.nix {inherit pkgs rust_pkg;};
     in {
-      devShells.linux = shell.linux;
-      packages.linux = alex.linux;
+      devShells = import ./_nix/shell.nix {inherit pkgs rust_pkg;};
+      packages = import ./_nix/pkg.nix {inherit pkgs rust_pkg;};
     });
 }

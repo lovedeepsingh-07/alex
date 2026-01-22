@@ -8,7 +8,7 @@
     rustc = rust_pkg;
   };
 in {
-  linux = rust-platform.buildRustPackage {
+  default = rust-platform.buildRustPackage {
     pname = "alex";
     version = "0.1.0";
     src = ../.;
