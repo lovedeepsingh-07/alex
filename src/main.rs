@@ -82,27 +82,27 @@ async fn handle_response(response: protocol::response::Response) -> Result<(), e
                     let status_json = response.data.get(3).ok_or_else(|| {
                         error::Error::ProtocolError("Missing the status json".to_string())
                     })?;
-                    println!("{}", status_json);
-                },
+                    print!("{}", status_json);
+                }
                 "CURRENT_AUDIO" => {
-                    if let Some(current_audio) = response.data.get(3){
+                    if let Some(current_audio) = response.data.get(3) {
                         println!("{}", current_audio);
                     } else {
-                        println!("NO AUDIO");
+                        print!("NO AUDIO");
                     }
-                },
+                }
                 "IS_PAUSED" => {
                     let is_paused = response.data.get(3).ok_or_else(|| {
                         error::Error::ProtocolError("Missing is_paused".to_string())
                     })?;
-                    println!("{}", is_paused);
-                },
+                    print!("{}", is_paused);
+                }
                 "IS_QUEUE_EMPTY" => {
                     let is_queue_empty = response.data.get(3).ok_or_else(|| {
                         error::Error::ProtocolError("Missing the is_queue_empty".to_string())
                     })?;
-                    println!("{}", is_queue_empty);
-                },
+                    print!("{}", is_queue_empty);
+                }
                 _ => {
                     return Err(error::Error::ProtocolError(
                         "Invalid status sub command line".to_string(),
@@ -114,10 +114,39 @@ async fn handle_response(response: protocol::response::Response) -> Result<(), e
             println!("> Player reloaded");
         }
         "SEARCH" => {
-            println!("> Searching");
+            // NOTE: here we skip(2) because we want an iterator on the audio labels only,
+            // ignoring the first 2 elements which would be "OK" and "SEARCH"
+            let mut audio_label_iter = response.data.iter().skip(2);
+            while let Some(audio_label) = audio_label_iter.next() {
+                println!("-> {}", audio_label);
+            }
         }
         "PLAYER" => {
-            println!("> Player");
+            let player_sub_command_line = response.data.get(2).ok_or_else(|| {
+                error::Error::ProtocolError("Missing the player sub command line".to_string())
+            })?;
+            match player_sub_command_line.as_str() {
+                "PLAY" => {
+                    let audio_label = response.data.get(3).ok_or_else(|| {
+                        error::Error::ProtocolError("Missing the audio label".to_string())
+                    })?;
+                    println!("> Playing {}", audio_label);
+                }
+                "RESUME" => {
+                    println!("> Resuming playback")
+                }
+                "PAUSE" => {
+                    println!("> Pausing playback");
+                }
+                "CLEAR" => {
+                    println!("> Clearing player queue");
+                }
+                _ => {
+                    return Err(error::Error::ProtocolError(
+                        "Invalid player sub command line".to_string(),
+                    ));
+                }
+            }
         }
         _ => {
             return Err(error::Error::ProtocolError(

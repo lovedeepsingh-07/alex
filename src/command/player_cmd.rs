@@ -16,6 +16,7 @@ pub(crate) async fn handle(
                         quote = "\"".purple()
                     );
                     response_data.push("PLAY".to_string());
+                    response_data.push(audio_label.to_string());
                 }
                 Err(e) => {
                     log::error!("Failed to play the audio: {}", e.to_string());
