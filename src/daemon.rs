@@ -8,6 +8,8 @@ pub(crate) async fn run() -> Result<(), error::Error> {
     let listener = tokio::net::TcpListener::bind(constants::SERVER_ADDRESS).await?;
     let mut player = player::Player::new()?;
 
+    log::info!("Daemon running on {}", constants::SERVER_ADDRESS);
+
     loop {
         let (mut tcp_stream, _) = listener.accept().await?;
         player.update_state()?;

@@ -9,13 +9,37 @@ pub(crate) struct CliArgs {
 #[derive(Debug, clap::Subcommand, PartialEq)]
 pub(crate) enum SubCommand {
     Daemon,
-    Status,
+    Status {
+        #[command(subcommand)]
+        sub_command: Option<StatusSubCommand>,
+    },
     Reload,
-    Search { search_term: Option<String> },
-    Play { audio_label: String },
+    Search {
+        search_term: Option<String>,
+    },
+    Play {
+        audio_label: String,
+    },
     Pause,
     Resume,
     Clear,
+}
+
+#[derive(Debug, clap::Subcommand, PartialEq)]
+pub(crate) enum StatusSubCommand {
+    CurrentAudio,
+    IsPaused,
+    IsQueueEmpty,
+}
+impl StatusSubCommand {
+    pub(crate) fn to_request_key(&self) -> String {
+        match self {
+            StatusSubCommand::CurrentAudio => "CURRENT_AUDIO",
+            StatusSubCommand::IsPaused => "IS_PAUSED",
+            StatusSubCommand::IsQueueEmpty => "IS_QUEUE_EMPTY",
+        }
+        .to_string()
+    }
 }
 
 pub(crate) fn generate_request(sub_command: SubCommand) -> Result<request::Request, error::Error> {
@@ -24,9 +48,12 @@ pub(crate) fn generate_request(sub_command: SubCommand) -> Result<request::Reque
 
     match sub_command {
         SubCommand::Daemon => {}
-        SubCommand::Status => {
+        SubCommand::Status { sub_command } => {
             request.data.push("STATUS".to_string());
-        },
+            if let Some(status_sub_command) = sub_command {
+                request.data.push(status_sub_command.to_request_key());
+            }
+        }
         SubCommand::Reload => {
             request.data.push("RELOAD".to_string());
         }

@@ -43,15 +43,86 @@ async fn connect(sub_command: cli::SubCommand) -> Result<(), error::Error> {
     tcp_stream.shutdown().await?;
 
     let response = protocol::response::Response::from_stream(&mut tcp_stream).await?;
-    println!("{:#?}", response);
-    if let Some(command_line) = response.data.get(1) {
-        match command_line.as_str() {
-            "STATUS" => {
-                if let Some(status_line) = response.data.get(2) {
-                    println!("{:#?}", serde_json::from_str::<player::PlayerState>(&status_line).unwrap())
+    handle_response(response).await?;
+
+    Ok(())
+}
+
+async fn handle_response(response: protocol::response::Response) -> Result<(), error::Error> {
+    let result_line = response
+        .data
+        .get(0)
+        .ok_or_else(|| error::Error::ProtocolError("Missing the result line".to_string()))?;
+    match result_line.as_str() {
+        "OK" => {}
+        "ERROR" => {
+            if let Some(error_value) = response.data.get(1) {
+                return Err(error::Error::ProtocolError(format!("{}", error_value)));
+            }
+            return Err(error::Error::ProtocolError("ERROR".to_string()));
+        }
+        _ => {
+            return Err(error::Error::ProtocolError(
+                "Invalid result line".to_string(),
+            ));
+        }
+    }
+
+    let command_line = response
+        .data
+        .get(1)
+        .ok_or_else(|| error::Error::ProtocolError("Missing the command line".to_string()))?;
+    match command_line.as_str() {
+        "STATUS" => {
+            let status_sub_command_line = response.data.get(2).ok_or_else(|| {
+                error::Error::ProtocolError("Missing the status sub command line".to_string())
+            })?;
+            match status_sub_command_line.as_str() {
+                "ALL" => {
+                    let status_json = response.data.get(3).ok_or_else(|| {
+                        error::Error::ProtocolError("Missing the status json".to_string())
+                    })?;
+                    println!("{}", status_json);
+                },
+                "CURRENT_AUDIO" => {
+                    if let Some(current_audio) = response.data.get(3){
+                        println!("{}", current_audio);
+                    } else {
+                        println!("NO AUDIO");
+                    }
+                },
+                "IS_PAUSED" => {
+                    let is_paused = response.data.get(3).ok_or_else(|| {
+                        error::Error::ProtocolError("Missing is_paused".to_string())
+                    })?;
+                    println!("{}", is_paused);
+                },
+                "IS_QUEUE_EMPTY" => {
+                    let is_queue_empty = response.data.get(3).ok_or_else(|| {
+                        error::Error::ProtocolError("Missing the is_queue_empty".to_string())
+                    })?;
+                    println!("{}", is_queue_empty);
+                },
+                _ => {
+                    return Err(error::Error::ProtocolError(
+                        "Invalid status sub command line".to_string(),
+                    ));
                 }
-            },
-            _ => {}
+            }
+        }
+        "RELOAD" => {
+            println!("> Player reloaded");
+        }
+        "SEARCH" => {
+            println!("> Searching");
+        }
+        "PLAYER" => {
+            println!("> Player");
+        }
+        _ => {
+            return Err(error::Error::ProtocolError(
+                "Invalid command line".to_string(),
+            ));
         }
     }
 

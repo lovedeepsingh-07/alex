@@ -7,7 +7,7 @@ pub(crate) async fn handle(
 ) -> Result<response::Response, error::Error> {
     let mut response_data: Vec<String> = vec!["OK".to_string(), "PLAYER".to_string()];
     match player_sub_command {
-        command::PlayerSubCommand::Play(audio_label) => {
+        command::PlayerSubCommand::Play { audio_label } => {
             match player.play(&audio_label) {
                 Ok(_) => {
                     log::debug!(

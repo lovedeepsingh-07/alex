@@ -52,16 +52,35 @@ impl Request {
             .get(1)
             .ok_or_else(|| error::Error::ProtocolError("Missing the command line".to_string()))?;
         match command_line.as_str() {
-            "STATUS" => return Ok(command::Command::Status),
+            "STATUS" => {
+                if let Some(status_sub_command) = self.data.get(2) {
+                    let sub_command = match status_sub_command.as_str() {
+                        "CURRENT_AUDIO" => command::StatusSubCommand::CurrentAudio,
+                        "IS_PAUSED" => command::StatusSubCommand::IsPaused,
+                        "IS_QUEUE_EMPTY" => command::StatusSubCommand::IsQueueEmpty,
+                        _ => {
+                            return Err(error::Error::ProtocolError(
+                                "Invalid player sub-command".to_string(),
+                            ));
+                        }
+                    };
+                    return Ok(command::Command::Status {
+                        sub_command: Some(sub_command),
+                    });
+                }
+                return Ok(command::Command::Status { sub_command: None });
+            }
             "RELOAD" => return Ok(command::Command::Reload),
             "SEARCH" => {
                 if let Some(search_term) = self.data.get(2) {
                     if search_term.trim().len() != 0 {
-                        return Ok(command::Command::Search(Some(search_term.to_string())));
+                        return Ok(command::Command::Search {
+                            search_term: Some(search_term.to_string()),
+                        });
                     }
-                    return Ok(command::Command::Search(None));
+                    return Ok(command::Command::Search { search_term: None });
                 }
-                return Ok(command::Command::Search(None));
+                return Ok(command::Command::Search { search_term: None });
             }
             "PLAYER" => {
                 let player_line = self.data.get(2).ok_or_else(|| {
@@ -72,18 +91,26 @@ impl Request {
                         let audio_label = self.data.get(3).ok_or_else(|| {
                             error::Error::ProtocolError("Missing the player line".to_string())
                         })?;
-                        return Ok(command::Command::Player(command::PlayerSubCommand::Play(
-                            audio_label.clone(),
-                        )));
+                        return Ok(command::Command::Player {
+                            sub_command: command::PlayerSubCommand::Play {
+                                audio_label: audio_label.clone(),
+                            },
+                        });
                     }
                     "PAUSE" => {
-                        return Ok(command::Command::Player(command::PlayerSubCommand::Pause));
+                        return Ok(command::Command::Player {
+                            sub_command: command::PlayerSubCommand::Pause,
+                        });
                     }
                     "RESUME" => {
-                        return Ok(command::Command::Player(command::PlayerSubCommand::Resume));
+                        return Ok(command::Command::Player {
+                            sub_command: command::PlayerSubCommand::Resume,
+                        });
                     }
                     "CLEAR" => {
-                        return Ok(command::Command::Player(command::PlayerSubCommand::Clear));
+                        return Ok(command::Command::Player {
+                            sub_command: command::PlayerSubCommand::Clear,
+                        });
                     }
                     _ => {
                         return Err(error::Error::ProtocolError(

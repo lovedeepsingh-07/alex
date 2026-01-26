@@ -10,6 +10,7 @@ pub(crate) enum Error {
     ChannelReceiveError(String),
     StreamError(String),
     DecoderError(String),
+    JsonError(String),
 }
 
 impl std::string::ToString for Error {
@@ -24,6 +25,7 @@ impl std::string::ToString for Error {
             Error::ChannelReceiveError(err_str) => format!("ChannelReceiveError {}", err_str),
             Error::StreamError(err_str) => format!("StreamError {}", err_str),
             Error::DecoderError(err_str) => format!("DecoderError {}", err_str),
+            Error::JsonError(err_str) => format!("JsonError {}", err_str),
         }
     }
 }
@@ -45,6 +47,11 @@ impl From<rodio::stream::StreamError> for Error {
 }
 impl From<rodio::decoder::DecoderError> for Error {
     fn from(value: rodio::decoder::DecoderError) -> Self {
+        Error::DecoderError(value.to_string())
+    }
+}
+impl From<serde_json::Error> for Error {
+    fn from(value: serde_json::Error) -> Self {
         Error::DecoderError(value.to_string())
     }
 }
