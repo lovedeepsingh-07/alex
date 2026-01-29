@@ -1,6 +1,7 @@
 use crate::{error, protocol::request};
 
 #[derive(Debug, clap::Parser)]
+#[command(version)]
 pub(crate) struct CliArgs {
     #[command(subcommand)]
     pub(crate) sub_command: SubCommand,
