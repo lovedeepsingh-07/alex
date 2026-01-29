@@ -1,0 +1,26 @@
+name: Mirror to Codeberg
+on:
+  push:
+    branches: ["main"]
+jobs:
+  mirror:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Set up SSH for Codeberg
+        env:
+          SSH_KEY: ${{ secrets.CODEBERG_SSH_KEY }}
+        run: |
+          mkdir -p ~/.ssh
+          echo "$SSH_KEY" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan codeberg.org >> ~/.ssh/known_hosts
+      - name: Mirror push to Codeberg
+        env:
+          CODEBERG_REPO: ${{ secrets.CODEBERG_REPO }}
+        run: |
+          git remote add codeberg "$CODEBERG_REPO"
+          git push --mirror codeberg
