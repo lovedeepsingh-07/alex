@@ -1,9 +1,9 @@
-use crate::{command, error, player, protocol::response};
+use crate::{command, error, player, protocol};
 
-pub(crate) async fn handle(
+pub async fn handle(
     player: &mut player::Player,
     sub_command: Option<command::StatusSubCommand>,
-) -> Result<response::Response, error::Error> {
+) -> Result<protocol::Response, error::Error> {
     let mut response_data: Vec<String> = vec!["OK".to_string(), "STATUS".to_string()];
 
     if let Some(sub_command) = sub_command {
@@ -28,7 +28,7 @@ pub(crate) async fn handle(
         response_data.push(serde_json::to_string(&player.state).unwrap());
     }
 
-    Ok(response::Response {
+    Ok(protocol::Response {
         data: response_data,
     })
 }

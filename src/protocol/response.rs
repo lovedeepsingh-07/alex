@@ -2,15 +2,15 @@ use crate::error;
 use tokio::io::AsyncBufReadExt;
 
 #[derive(Debug)]
-pub(crate) struct Response {
-    pub(crate) data: Vec<String>,
+pub struct Response {
+    pub data: Vec<String>,
 }
 
 impl Response {
-    pub(crate) fn new() -> Self {
+    pub fn new() -> Self {
         Response { data: Vec::new() }
     }
-    pub(crate) async fn from_stream(
+    pub async fn from_stream(
         tcp_stream: &mut tokio::net::TcpStream,
     ) -> Result<Self, error::Error> {
         let mut value = Self::new();
@@ -21,7 +21,7 @@ impl Response {
         }
         Ok(value)
     }
-    pub(crate) fn to_bytes(&self) -> Vec<u8> {
+    pub fn to_bytes(&self) -> Vec<u8> {
         self.data.join("\n").into_bytes()
     }
 }

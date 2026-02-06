@@ -1,6 +1,11 @@
+// This file contains the `Error` enum and a `ToString` trait implementation to convert the enum
+// into a proper string for error logging
+// It also contains various `From` implementation to make error propagation easier by allowing to
+// use the `?` operator instead of having to manually map errors
+
 #[allow(dead_code)]
 #[derive(Debug)]
-pub(crate) enum Error {
+pub enum Error {
     IOError(String),
     FSError(String),
     ParseError(String),
@@ -16,16 +21,16 @@ pub(crate) enum Error {
 impl std::string::ToString for Error {
     fn to_string(&self) -> String {
         match self {
-            Error::IOError(err_str) => format!("IOError {}", err_str),
-            Error::FSError(err_str) => format!("FSError {}", err_str),
-            Error::ParseError(err_str) => format!("ParseError {}", err_str),
-            Error::ProtocolError(err_str) => format!("ProtocolError {}", err_str),
-            Error::NotFoundError(err_str) => format!("NotFoundError {}", err_str),
-            Error::ChannelSendError(err_str) => format!("ChannelSendError {}", err_str),
-            Error::ChannelReceiveError(err_str) => format!("ChannelReceiveError {}", err_str),
-            Error::StreamError(err_str) => format!("StreamError {}", err_str),
-            Error::DecoderError(err_str) => format!("DecoderError {}", err_str),
-            Error::JsonError(err_str) => format!("JsonError {}", err_str),
+            Error::IOError(err_str) => format!("IOError: {}", err_str),
+            Error::FSError(err_str) => format!("FSError: {}", err_str),
+            Error::ParseError(err_str) => format!("ParseError: {}", err_str),
+            Error::ProtocolError(err_str) => format!("ProtocolError: {}", err_str),
+            Error::NotFoundError(err_str) => format!("NotFoundError: {}", err_str),
+            Error::ChannelSendError(err_str) => format!("ChannelSendError: {}", err_str),
+            Error::ChannelReceiveError(err_str) => format!("ChannelReceiveError: {}", err_str),
+            Error::StreamError(err_str) => format!("StreamError: {}", err_str),
+            Error::DecoderError(err_str) => format!("DecoderError: {}", err_str),
+            Error::JsonError(err_str) => format!("JsonError: {}", err_str),
         }
     }
 }

@@ -1,10 +1,10 @@
-use crate::{command, error, player, protocol::response};
+use crate::{command, error, player, protocol};
 use colored::Colorize;
 
-pub(crate) async fn handle(
+pub async fn handle(
     player: &mut player::Player,
     player_sub_command: command::PlayerSubCommand,
-) -> Result<response::Response, error::Error> {
+) -> Result<protocol::Response, error::Error> {
     let mut response_data: Vec<String> = vec!["OK".to_string(), "PLAYER".to_string()];
     match player_sub_command {
         command::PlayerSubCommand::Play { audio_label } => {
@@ -40,7 +40,7 @@ pub(crate) async fn handle(
         }
     }
 
-    Ok(response::Response {
+    Ok(protocol::Response {
         data: response_data,
     })
 }

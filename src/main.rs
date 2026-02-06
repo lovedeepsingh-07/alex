@@ -1,13 +1,14 @@
-pub(crate) mod cli;
-pub(crate) mod command;
-pub(crate) mod constants;
-pub(crate) mod daemon;
-pub(crate) mod error;
-pub(crate) mod player;
-pub(crate) mod protocol;
+pub mod cli;
+pub mod command;
+pub mod constants;
+pub mod daemon;
+pub mod error;
+pub mod player;
+pub mod protocol;
 
 use clap::Parser;
 use tokio::io::AsyncWriteExt;
+use colored::Colorize;
 
 #[tokio::main]
 async fn main() {
@@ -15,8 +16,9 @@ async fn main() {
     env_logger::init_from_env(logger_env);
 
     let cli_args = cli::CliArgs::parse();
+
     if cli_args.sub_command == cli::SubCommand::Daemon {
-        match daemon::run().await {
+        match daemon::run(cli_args.port).await {
             Ok(_) => {}
             Err(e) => {
                 log::error!("Failed to run daemon, {}", e.to_string());
@@ -25,7 +27,7 @@ async fn main() {
         return;
     }
 
-    match connect(cli_args.sub_command).await {
+    match connect(cli_args).await {
         Ok(_) => {}
         Err(e) => {
             log::error!("Failed to make request, {}", e.to_string());
@@ -33,22 +35,33 @@ async fn main() {
     };
 }
 
-async fn connect(sub_command: cli::SubCommand) -> Result<(), error::Error> {
-    let request = cli::generate_request(sub_command)?;
-    let mut tcp_stream = tokio::net::TcpStream::connect(constants::SERVER_ADDRESS).await?;
+async fn connect(cli_args: cli::CliArgs) -> Result<(), error::Error> {
+    let request = cli::generate_request(cli_args.sub_command)?;
+
+    let mut tcp_stream = match tokio::net::TcpStream::connect(format!("127.0.0.1:{}", cli_args.port)).await {
+        Ok(out) => out,
+        Err(e) => {
+            // NOTE: if we were unable to connect to the daemon that means it is offline
+            if e.kind() == std::io::ErrorKind::ConnectionRefused {
+                print!("OFFLINE");
+                return Ok(());
+            }
+            return Err(error::Error::IOError(e.to_string()));
+        }
+    };
     tcp_stream.write_all(&request.to_bytes()).await?;
 
     // NOTE: this is important to ensure anyone reading from this stream does not loop
     // forever, it ensure EOF is reached on the "reader" side, by shutting down the "writer"
     tcp_stream.shutdown().await?;
 
-    let response = protocol::response::Response::from_stream(&mut tcp_stream).await?;
-    handle_response(response).await?;
+    let response = protocol::Response::from_stream(&mut tcp_stream).await?;
+    handle_response(response, cli_args.just_info).await?;
 
     Ok(())
 }
 
-async fn handle_response(response: protocol::response::Response) -> Result<(), error::Error> {
+async fn handle_response(response: protocol::Response, just_info: bool) -> Result<(), error::Error> {
     let result_line = response
         .data
         .get(0)
@@ -59,7 +72,9 @@ async fn handle_response(response: protocol::response::Response) -> Result<(), e
             if let Some(error_value) = response.data.get(1) {
                 return Err(error::Error::ProtocolError(format!("{}", error_value)));
             }
-            return Err(error::Error::ProtocolError("ERROR".to_string()));
+            // NOTE: If we were unable to determine what kind of error it was, it was not an error,
+            // it was something decided by god himself
+            return Err(error::Error::ProtocolError("HOLY_ERROR".to_string()));
         }
         _ => {
             return Err(error::Error::ProtocolError(
@@ -82,26 +97,46 @@ async fn handle_response(response: protocol::response::Response) -> Result<(), e
                     let status_json = response.data.get(3).ok_or_else(|| {
                         error::Error::ProtocolError("Missing the status json".to_string())
                     })?;
-                    print!("{}", status_json);
+                    if  just_info {
+                        print!("{}", status_json);
+                    } else {
+                        println!("> {}", status_json);
+                    }
                 }
                 "CURRENT_AUDIO" => {
                     if let Some(current_audio) = response.data.get(3) {
-                        println!("{}", current_audio);
+                        if just_info {
+                            print!("{}", current_audio);
+                        } else {
+                            println!("> Current Audio: {}", current_audio.purple());
+                        }
                     } else {
-                        print!("NO AUDIO");
+                        if just_info {
+                            print!("NO AUDIO");
+                        } else {
+                            println!("> No audio is playing");
+                        }
                     }
                 }
                 "IS_PAUSED" => {
                     let is_paused = response.data.get(3).ok_or_else(|| {
                         error::Error::ProtocolError("Missing is_paused".to_string())
                     })?;
-                    print!("{}", is_paused);
+                    if just_info {
+                        print!("{}", is_paused);
+                    } else {
+                        println!("> {}", is_paused);
+                    }
                 }
                 "IS_QUEUE_EMPTY" => {
                     let is_queue_empty = response.data.get(3).ok_or_else(|| {
                         error::Error::ProtocolError("Missing the is_queue_empty".to_string())
                     })?;
-                    print!("{}", is_queue_empty);
+                    if just_info {
+                        print!("{}", is_queue_empty);
+                    } else {
+                        println!("> {}", is_queue_empty);
+                    }
                 }
                 _ => {
                     return Err(error::Error::ProtocolError(

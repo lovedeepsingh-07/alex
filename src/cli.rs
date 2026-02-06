@@ -1,39 +1,56 @@
-use crate::{error, protocol::request};
+use crate::{error, protocol, constants};
 
 #[derive(Debug, clap::Parser)]
 #[command(version)]
-pub(crate) struct CliArgs {
+pub struct CliArgs {
+    #[arg(long, default_value=constants::DEFAULT_SERVER_PORT, global=true)]
+    /// Server port
+    pub port: u16,
+    #[arg(long, global=true)]
+    /// Pass this argument when calling the `status` subcommand from another program
+    pub just_info: bool,
     #[command(subcommand)]
-    pub(crate) sub_command: SubCommand,
+    pub sub_command: SubCommand,
 }
 
 #[derive(Debug, clap::Subcommand, PartialEq)]
-pub(crate) enum SubCommand {
+pub enum SubCommand {
+    /// Run the music daemon
     Daemon,
+    /// Get information such as which song is playing, whether playback is paused or not etc
     Status {
         #[command(subcommand)]
         sub_command: Option<StatusSubCommand>,
     },
+    /// Reload the audio index to reflect any changes to the folder
     Reload,
+    /// Search through the audio index
     Search {
         search_term: Option<String>,
     },
+    /// Play an audio
     Play {
         audio_label: String,
     },
+    /// Pause playback (does nothing if already paused)
     Pause,
+    /// Resume playback (does nothing if already resumed)
     Resume,
+    /// Clear playing queue
     Clear,
 }
 
 #[derive(Debug, clap::Subcommand, PartialEq)]
-pub(crate) enum StatusSubCommand {
+pub enum StatusSubCommand {
+    /// Current playing audio
     CurrentAudio,
+    /// Is the playback paused ?
     IsPaused,
+    /// Is the playing queue empty ?
     IsQueueEmpty,
 }
 impl StatusSubCommand {
-    pub(crate) fn to_request_key(&self) -> String {
+    pub fn to_request_key(&self) -> String {
         match self {
             StatusSubCommand::CurrentAudio => "CURRENT_AUDIO",
             StatusSubCommand::IsPaused => "IS_PAUSED",
@@ -43,8 +60,8 @@ impl StatusSubCommand {
     }
 }
 
-pub(crate) fn generate_request(sub_command: SubCommand) -> Result<request::Request, error::Error> {
-    let mut request = request::Request::new();
+pub fn generate_request(sub_command: SubCommand) -> Result<protocol::Request, error::Error> {
+    let mut request = protocol::Request::new();
     request.data.push(request.private_key_hash.clone());
 
     match sub_command {

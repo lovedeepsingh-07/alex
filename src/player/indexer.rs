@@ -1,13 +1,13 @@
 use crate::error;
 use std::collections::HashMap;
 
-pub(crate) struct Audio {
-    pub(crate) path: std::path::PathBuf,
+pub struct Audio {
+    pub path: std::path::PathBuf,
 }
 
-pub(crate) type AudioIndex = HashMap<String, Audio>;
+pub type AudioIndex = HashMap<String, Audio>;
 
-pub(crate) fn index_audio_files() -> Result<AudioIndex, error::Error> {
+pub fn index_audio_files() -> Result<AudioIndex, error::Error> {
     let mut index = HashMap::new();
     let home_dir = std::env::home_dir().ok_or_else(|| {
         error::Error::FSError("Failed to get the home directory path".to_string())
