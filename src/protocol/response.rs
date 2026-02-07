@@ -10,9 +10,7 @@ impl Response {
     pub fn new() -> Self {
         Response { data: Vec::new() }
     }
-    pub async fn from_stream(
-        tcp_stream: &mut tokio::net::TcpStream,
-    ) -> Result<Self, error::Error> {
+    pub async fn from_stream(tcp_stream: &mut tokio::net::TcpStream) -> Result<Self, error::Error> {
         let mut value = Self::new();
         let reader = tokio::io::BufReader::new(tcp_stream);
         let mut lines = reader.lines();

@@ -1,8 +1,6 @@
 use crate::{error, player, protocol};
 
-pub async fn handle(
-    player: &mut player::Player,
-) -> Result<protocol::Response, error::Error> {
+pub async fn handle(player: &mut player::Player) -> Result<protocol::Response, error::Error> {
     log::debug!("Reloading player audio index");
     player.reload()?;
     let response = protocol::Response {

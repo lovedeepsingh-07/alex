@@ -1,126 +1,148 @@
-use crate::{command, constants, error};
-use tokio::io::AsyncBufReadExt;
+use crate::{command, error, protocol::request_packet};
+use tokio::io::AsyncReadExt;
 
 #[derive(Debug)]
 pub struct Request {
-    pub data: Vec<String>,
-    pub private_key_hash: String,
+    pub packet: Vec<u8>,
 }
 
 impl Request {
     pub fn new() -> Self {
-        Request {
-            private_key_hash: blake3::hash(constants::PRIVATE_KEY.as_bytes()).to_string(),
-            data: Vec::new(),
-        }
+        Request { packet: Vec::new() }
     }
-    pub async fn from_stream(
-        tcp_stream: &mut tokio::net::TcpStream,
-    ) -> Result<Self, error::Error> {
+    pub async fn from_stream(tcp_stream: &mut tokio::net::TcpStream) -> Result<Self, error::Error> {
         let mut value = Self::new();
-        let reader = tokio::io::BufReader::new(tcp_stream);
-        let mut lines = reader.lines();
-        while let Some(curr_line) = lines.next_line().await? {
-            value.data.push(curr_line);
-        }
+        tcp_stream.read_to_end(&mut value.packet).await?;
         Ok(value)
     }
     pub fn to_bytes(&self) -> Vec<u8> {
-        self.data.join("\n").into_bytes()
+        self.packet.clone()
     }
     pub fn to_cmd(&self) -> Result<command::Command, error::Error> {
-        let total_lines = self.data.len();
-        if total_lines == 0 {
-            return Err(error::Error::ProtocolError(
-                "Parsed request has no data".to_string(),
-            ));
-        }
+        let request_packet = request_packet::root_as_request_packet(&self.packet)?;
 
-        let private_key_hash = self
-            .data
-            .get(0)
-            .ok_or_else(|| error::Error::ProtocolError("Missing the private key hash".to_string()))?
-            .to_string();
-        if private_key_hash != self.private_key_hash {
-            return Err(error::Error::ProtocolError(
-                "Incorrect private key hash".to_string(),
-            ));
-        }
-
-        let command_line = self
-            .data
-            .get(1)
-            .ok_or_else(|| error::Error::ProtocolError("Missing the command line".to_string()))?;
-        match command_line.as_str() {
-            "STATUS" => {
-                if let Some(status_sub_command) = self.data.get(2) {
-                    let sub_command = match status_sub_command.as_str() {
-                        "CURRENT_AUDIO" => command::StatusSubCommand::CurrentAudio,
-                        "IS_PAUSED" => command::StatusSubCommand::IsPaused,
-                        "IS_QUEUE_EMPTY" => command::StatusSubCommand::IsQueueEmpty,
+        match request_packet.command_type() {
+            request_packet::Command::Status => {
+                if let Some(status_command) = request_packet.command_as_status() {
+                    let status_sub_command = status_command.sub_command();
+                    match status_sub_command {
+                        request_packet::StatusSubCommand::CurrentAudio => {
+                            return Ok(command::Command::Status {
+                                sub_command: Some(command::StatusSubCommand::CurrentAudio),
+                            });
+                        }
+                        request_packet::StatusSubCommand::IsPaused => {
+                            return Ok(command::Command::Status {
+                                sub_command: Some(command::StatusSubCommand::IsPaused),
+                            });
+                        }
+                        request_packet::StatusSubCommand::IsQueueEmpty => {
+                            return Ok(command::Command::Status {
+                                sub_command: Some(command::StatusSubCommand::IsQueueEmpty),
+                            });
+                        }
+                        request_packet::StatusSubCommand::NONE => {
+                            return Ok(command::Command::Status { sub_command: None });
+                        }
                         _ => {
                             return Err(error::Error::ProtocolError(
-                                "Invalid player sub-command".to_string(),
+                                "Invalid request packet status sub command".to_string(),
                             ));
                         }
+                    }
+                }
+                return Err(error::Error::ProtocolError(
+                    "Failed to get request packet as Status command".to_string(),
+                ));
+            }
+            request_packet::Command::Reload => {
+                return Ok(command::Command::Reload);
+            }
+            request_packet::Command::Search => {
+                if let Some(search_command) = request_packet.command_as_search() {
+                    let search_term = match search_command.search_term() {
+                        Some(search_term) => {
+                            let search_term = search_term.trim().to_string();
+                            if search_term.len() == 0 {
+                                None
+                            } else {
+                                Some(search_term)
+                            }
+                        }
+                        None => None,
                     };
-                    return Ok(command::Command::Status {
-                        sub_command: Some(sub_command),
-                    });
+                    return Ok(command::Command::Search { search_term });
                 }
-                return Ok(command::Command::Status { sub_command: None });
+                return Err(error::Error::ProtocolError(
+                    "Failed to get request packet as Search command".to_string(),
+                ));
             }
-            "RELOAD" => return Ok(command::Command::Reload),
-            "SEARCH" => {
-                if let Some(search_term) = self.data.get(2) {
-                    if search_term.trim().len() != 0 {
-                        return Ok(command::Command::Search {
-                            search_term: Some(search_term.to_string()),
-                        });
+            request_packet::Command::Player => {
+                if let Some(player_command) = request_packet.command_as_player() {
+                    match player_command.sub_command_type() {
+                        request_packet::PlayerSubCommand::Play => {
+                            if let Some(sub_command_play) = player_command.sub_command_as_play() {
+                                if let Some(audio_label) = sub_command_play.audio_label() {
+                                    return Ok(command::Command::Player {
+                                        sub_command: command::PlayerSubCommand::Play {
+                                            audio_label: audio_label.to_string(),
+                                        },
+                                    });
+                                }
+                                return Err(error::Error::ProtocolError(
+                                    "Failed to get the audio label for Play sub command"
+                                        .to_string(),
+                                ));
+                            }
+                            return Err(error::Error::ProtocolError(
+                                "Failed to get player sub command as Play".to_string(),
+                            ));
+                        }
+                        request_packet::PlayerSubCommand::Pause => {
+                            if let Some(_) = player_command.sub_command_as_pause() {
+                                return Ok(command::Command::Player {
+                                    sub_command: command::PlayerSubCommand::Pause,
+                                });
+                            }
+                            return Err(error::Error::ProtocolError(
+                                "Failed to get player sub command as Pause".to_string(),
+                            ));
+                        }
+                        request_packet::PlayerSubCommand::Resume => {
+                            if let Some(_) = player_command.sub_command_as_resume() {
+                                return Ok(command::Command::Player {
+                                    sub_command: command::PlayerSubCommand::Resume,
+                                });
+                            }
+                            return Err(error::Error::ProtocolError(
+                                "Failed to get player sub command as Resume".to_string(),
+                            ));
+                        }
+                        request_packet::PlayerSubCommand::Clear => {
+                            if let Some(_) = player_command.sub_command_as_clear() {
+                                return Ok(command::Command::Player {
+                                    sub_command: command::PlayerSubCommand::Clear,
+                                });
+                            }
+                            return Err(error::Error::ProtocolError(
+                                "Failed to get player sub command as Clear".to_string(),
+                            ));
+                        }
+                        _ => {
+                            return Err(error::Error::ProtocolError(
+                                "Invalid player sub command type".to_string(),
+                            ));
+                        }
                     }
-                    return Ok(command::Command::Search { search_term: None });
                 }
-                return Ok(command::Command::Search { search_term: None });
-            }
-            "PLAYER" => {
-                let player_line = self.data.get(2).ok_or_else(|| {
-                    error::Error::ProtocolError("Missing the player line".to_string())
-                })?;
-                match player_line.as_str() {
-                    "PLAY" => {
-                        let audio_label = self.data.get(3).ok_or_else(|| {
-                            error::Error::ProtocolError("Missing the player line".to_string())
-                        })?;
-                        return Ok(command::Command::Player {
-                            sub_command: command::PlayerSubCommand::Play {
-                                audio_label: audio_label.clone(),
-                            },
-                        });
-                    }
-                    "PAUSE" => {
-                        return Ok(command::Command::Player {
-                            sub_command: command::PlayerSubCommand::Pause,
-                        });
-                    }
-                    "RESUME" => {
-                        return Ok(command::Command::Player {
-                            sub_command: command::PlayerSubCommand::Resume,
-                        });
-                    }
-                    "CLEAR" => {
-                        return Ok(command::Command::Player {
-                            sub_command: command::PlayerSubCommand::Clear,
-                        });
-                    }
-                    _ => {
-                        return Err(error::Error::ProtocolError(
-                            "Invalid player sub-command".to_string(),
-                        ));
-                    }
-                }
+                return Err(error::Error::ProtocolError(
+                    "Failed to get request packet as Player command".to_string(),
+                ));
             }
             _ => {
-                return Err(error::Error::ProtocolError("Invalid command".to_string()));
+                return Err(error::Error::ProtocolError(
+                    "Invalid request packet command type".to_string(),
+                ));
             }
         }
     }

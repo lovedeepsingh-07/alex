@@ -1,8 +1,3 @@
-// This file contains the `Error` enum and a `ToString` trait implementation to convert the enum
-// into a proper string for error logging
-// It also contains various `From` implementation to make error propagation easier by allowing to
-// use the `?` operator instead of having to manually map errors
-
 #[allow(dead_code)]
 #[derive(Debug)]
 pub enum Error {
@@ -16,6 +11,7 @@ pub enum Error {
     StreamError(String),
     DecoderError(String),
     JsonError(String),
+    FlatbufferError(String),
 }
 
 impl std::string::ToString for Error {
@@ -31,6 +27,7 @@ impl std::string::ToString for Error {
             Error::StreamError(err_str) => format!("StreamError: {}", err_str),
             Error::DecoderError(err_str) => format!("DecoderError: {}", err_str),
             Error::JsonError(err_str) => format!("JsonError: {}", err_str),
+            Error::FlatbufferError(err_str) => format!("FlatbufferError: {}", err_str),
         }
     }
 }
@@ -58,5 +55,10 @@ impl From<rodio::decoder::DecoderError> for Error {
 impl From<serde_json::Error> for Error {
     fn from(value: serde_json::Error) -> Self {
         Error::DecoderError(value.to_string())
+    }
+}
+impl From<flatbuffers::InvalidFlatbuffer> for Error {
+    fn from(value: flatbuffers::InvalidFlatbuffer) -> Self {
+        Error::FlatbufferError(value.to_string())
     }
 }

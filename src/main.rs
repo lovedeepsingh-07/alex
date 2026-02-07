@@ -7,13 +7,15 @@ pub mod player;
 pub mod protocol;
 
 use clap::Parser;
-use tokio::io::AsyncWriteExt;
 use colored::Colorize;
+use tokio::io::AsyncWriteExt;
 
 #[tokio::main]
 async fn main() {
-    let logger_env = env_logger::Env::default().filter_or("RUST_LOG", "alex=debug");
-    env_logger::init_from_env(logger_env);
+    env_logger::Builder::new()
+        .filter_module("alex", log::LevelFilter::Debug)
+        .filter_level(log::LevelFilter::Off)
+        .init();
 
     let cli_args = cli::CliArgs::parse();
 
@@ -38,17 +40,18 @@ async fn main() {
 async fn connect(cli_args: cli::CliArgs) -> Result<(), error::Error> {
     let request = cli::generate_request(cli_args.sub_command)?;
 
-    let mut tcp_stream = match tokio::net::TcpStream::connect(format!("127.0.0.1:{}", cli_args.port)).await {
-        Ok(out) => out,
-        Err(e) => {
-            // NOTE: if we were unable to connect to the daemon that means it is offline
-            if e.kind() == std::io::ErrorKind::ConnectionRefused {
-                print!("OFFLINE");
-                return Ok(());
+    let mut tcp_stream =
+        match tokio::net::TcpStream::connect(format!("127.0.0.1:{}", cli_args.port)).await {
+            Ok(out) => out,
+            Err(e) => {
+                // NOTE: if we were unable to connect to the daemon that means it is offline
+                if e.kind() == std::io::ErrorKind::ConnectionRefused {
+                    print!("OFFLINE");
+                    return Ok(());
+                }
+                return Err(error::Error::IOError(e.to_string()));
             }
-            return Err(error::Error::IOError(e.to_string()));
-        }
-    };
+        };
     tcp_stream.write_all(&request.to_bytes()).await?;
 
     // NOTE: this is important to ensure anyone reading from this stream does not loop
@@ -61,7 +64,10 @@ async fn connect(cli_args: cli::CliArgs) -> Result<(), error::Error> {
     Ok(())
 }
 
-async fn handle_response(response: protocol::Response, just_info: bool) -> Result<(), error::Error> {
+async fn handle_response(
+    response: protocol::Response,
+    just_info: bool,
+) -> Result<(), error::Error> {
     let result_line = response
         .data
         .get(0)
@@ -97,7 +103,7 @@ async fn handle_response(response: protocol::Response, just_info: bool) -> Resul
                     let status_json = response.data.get(3).ok_or_else(|| {
                         error::Error::ProtocolError("Missing the status json".to_string())
                     })?;
-                    if  just_info {
+                    if just_info {
                         print!("{}", status_json);
                     } else {
                         println!("> {}", status_json);

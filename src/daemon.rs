@@ -1,6 +1,4 @@
-use crate::{
-    command, error, player, protocol,
-};
+use crate::{command, error, player, protocol};
 use colored::Colorize;
 use tokio::io::AsyncWriteExt;
 

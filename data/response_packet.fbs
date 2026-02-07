@@ -1,0 +1,5 @@
+namespace response_packet;
+
+table ResponsePacket {}
+
+root_type ResponsePacket;
