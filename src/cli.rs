@@ -1,7 +1,4 @@
-use crate::{
-    constants, error,
-    protocol::{self, request_packet},
-};
+use crate::{constants, error, flatbuffers_gen::request_packet_ as request_packet, protocol};
 
 #[derive(Debug, clap::Parser)]
 #[command(version)]

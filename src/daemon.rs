@@ -15,17 +15,18 @@ pub async fn run(server_port: u16) -> Result<(), error::Error> {
         let request = protocol::Request::from_stream(&mut tcp_stream).await?;
         let cmd = request.to_cmd()?;
 
-        let response = match command::handle(cmd, &mut player).await {
-            Ok(out) => out,
-            Err(_) => {
-                let response = protocol::Response {
-                    data: vec!["ERROR".to_string(), "NO_RESPONSE".to_string()],
-                };
-                response
-            }
-        };
+        // let response = match command::handle(cmd, &mut player).await {
+        //     Ok(out) => out,
+        //     Err(_) => {
+        //         let response = protocol::Response {
+        //             data: vec!["ERROR".to_string(), "NO_RESPONSE".to_string()],
+        //         };
+        //         response
+        //     }
+        // };
+        log::info!("{:#?}", command::handle(cmd, &mut player).await);
 
-        tcp_stream.write_all(&response.to_bytes()).await?;
+        // tcp_stream.write_all(&response.to_bytes()).await?;
         // NOTE: checkout the `main.rs` file for note regarding why this is here
         tcp_stream.shutdown().await?;
     }

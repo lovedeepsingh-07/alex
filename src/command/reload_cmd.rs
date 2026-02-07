@@ -5,6 +5,7 @@ pub async fn handle(player: &mut player::Player) -> Result<protocol::Response, e
     player.reload()?;
     let response = protocol::Response {
         data: vec!["OK".to_string(), "RELOAD".to_string()],
+        packet: Vec::new(),
     };
     Ok(response)
 }

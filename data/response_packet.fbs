@@ -1,5 +1,48 @@
-namespace response_packet;
+table OK {}
+table ERROR {
+	message:string;
+}
+union ResponseResult {
+	OK,
+	ERROR
+}
 
-table ResponsePacket {}
+enum StatusSubCommand: byte {
+	CurrentAudio,
+	IsPaused,
+	IsQueueEmpty,
+}
+table Status {
+	sub_command:StatusSubCommand = null;
+	output:string;
+}
+
+table Reload {}
+table Search {
+	search_result:[string];
+}
+
+enum PlayerSubCommand: byte {
+	Play,
+	Pause,
+	Resume,
+	Clear,
+}
+table Player {
+	sub_command:PlayerSubCommand;
+}
+
+union Command {
+	Status,
+	Reload,
+	Search,
+	Player,
+}
+
+table ResponsePacket {
+	result:ResponseResult;
+	command:Command;
+}
 
 root_type ResponsePacket;
+

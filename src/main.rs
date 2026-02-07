@@ -3,6 +3,7 @@ pub mod command;
 pub mod constants;
 pub mod daemon;
 pub mod error;
+mod flatbuffers_gen;
 pub mod player;
 pub mod protocol;
 
@@ -58,8 +59,8 @@ async fn connect(cli_args: cli::CliArgs) -> Result<(), error::Error> {
     // forever, it ensure EOF is reached on the "reader" side, by shutting down the "writer"
     tcp_stream.shutdown().await?;
 
-    let response = protocol::Response::from_stream(&mut tcp_stream).await?;
-    handle_response(response, cli_args.just_info).await?;
+    // let response = protocol::Response::from_stream(&mut tcp_stream).await?;
+    // handle_response(response, cli_args.just_info).await?;
 
     Ok(())
 }

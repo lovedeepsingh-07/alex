@@ -9,6 +9,7 @@ pub async fn handle(
             log::warn!("searching with a term is not implemented yet");
             return Ok(protocol::Response {
                 data: vec!["ERROR".to_string(), "SEARCH".to_string()],
+                packet: Vec::new(),
             });
         }
         None => {

@@ -1,4 +1,4 @@
-use crate::{command, error, protocol::request_packet};
+use crate::{command, error, flatbuffers_gen::request_packet_ as request_packet};
 use tokio::io::AsyncReadExt;
 
 #[derive(Debug)]

@@ -42,5 +42,6 @@ pub async fn handle(
 
     Ok(protocol::Response {
         data: response_data,
+        packet: Vec::new(),
     })
 }

@@ -52,13 +52,13 @@ impl From<rodio::decoder::DecoderError> for Error {
         Error::DecoderError(value.to_string())
     }
 }
-impl From<serde_json::Error> for Error {
-    fn from(value: serde_json::Error) -> Self {
-        Error::DecoderError(value.to_string())
-    }
-}
 impl From<flatbuffers::InvalidFlatbuffer> for Error {
     fn from(value: flatbuffers::InvalidFlatbuffer) -> Self {
         Error::FlatbufferError(value.to_string())
+    }
+}
+impl From<serde_json::Error> for Error {
+    fn from(value: serde_json::Error) -> Self {
+        Error::JsonError(value.to_string())
     }
 }
