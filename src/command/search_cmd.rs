@@ -5,22 +5,35 @@ pub async fn handle(
     search_term: Option<String>,
 ) -> Result<protocol::Response, error::Error> {
     match search_term {
-        Some(_search_term) => {
+        Some(search_term) => {
+            let _ = search_term;
             log::warn!("searching with a term is not implemented yet");
+
             return Ok(protocol::Response {
-                data: vec!["ERROR".to_string(), "SEARCH".to_string()],
-                packet: Vec::new(),
+                data: Vec::new(),
+                packet: bitcode::encode(&protocol::R_Packet{
+                    result: protocol::R_Result::ERROR {
+                        error_message: String::from("Searching with a term is not implemented yet")
+                    },
+                    command: protocol::R_Command::Search {
+                        search_result: Vec::new(),
+                    }
+                }),
             });
         }
         None => {
             log::debug!("Searching for audio files");
-            let mut response = protocol::Response::new();
-            response.data.push("OK".to_string());
-            response.data.push("SEARCH".to_string());
-            for (label, _) in &player.index {
-                response.data.push(label.clone());
-            }
-            return Ok(response);
+            let search_result = player.index.iter().map(|(label, _)|  label.clone()).collect::<Vec<String>>();
+
+            return Ok(protocol::Response {
+                data: Vec::new(),
+                packet: bitcode::encode(&protocol::R_Packet {
+                    result: protocol::R_Result::OK,
+                    command: protocol::R_Command::Search {
+                        search_result,
+                    }
+                })
+            });
         }
     }
 }

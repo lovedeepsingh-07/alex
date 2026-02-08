@@ -3,10 +3,12 @@ use colored::Colorize;
 
 pub async fn handle(
     player: &mut player::Player,
-    player_sub_command: command::PlayerSubCommand,
+    sub_command: command::PlayerSubCommand,
 ) -> Result<protocol::Response, error::Error> {
-    let mut response_data: Vec<String> = vec!["OK".to_string(), "PLAYER".to_string()];
-    match player_sub_command {
+    let mut player_sub_command = protocol::R_PlayerSubCommand::Resume;
+    let mut player_result = protocol::R_Result::OK;
+
+    match sub_command {
         command::PlayerSubCommand::Play { audio_label } => {
             match player.play(&audio_label) {
                 Ok(_) => {
@@ -15,33 +17,41 @@ pub async fn handle(
                         audio_label.purple(),
                         quote = "\"".purple()
                     );
-                    response_data.push("PLAY".to_string());
-                    response_data.push(audio_label.to_string());
-                }
+                    player_sub_command = protocol::R_PlayerSubCommand::Play {
+                        audio_label: audio_label.to_string(),
+                    };
+                },
                 Err(e) => {
                     log::error!("Failed to play the audio: {}", e.to_string());
+                    player_result = protocol::R_Result::ERROR {
+                        error_message: String::from("Failed to play the audio")
+                    };
                 }
             };
         }
         command::PlayerSubCommand::Pause => {
             log::debug!("Pausing playback");
             player.pause();
-            response_data.push("PAUSE".to_string());
+            player_sub_command = protocol::R_PlayerSubCommand::Pause;
         }
         command::PlayerSubCommand::Resume => {
             log::debug!("Resuming playback");
             player.resume();
-            response_data.push("RESUME".to_string());
+            player_sub_command = protocol::R_PlayerSubCommand::Resume;
         }
         command::PlayerSubCommand::Clear => {
             log::debug!("Clearing player queue");
             player.clear();
-            response_data.push("CLEAR".to_string());
+            player_sub_command = protocol::R_PlayerSubCommand::Clear;
         }
     }
 
-    Ok(protocol::Response {
-        data: response_data,
-        packet: Vec::new(),
-    })
+    let player_command = protocol::R_Command::Player { sub_command: player_sub_command };
+    return Ok(protocol::Response {
+        data: Vec::new(),
+        packet: bitcode::encode(&protocol::R_Packet {
+            result: player_result,
+            command: player_command,
+        })
+    });
 }

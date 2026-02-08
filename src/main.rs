@@ -59,8 +59,8 @@ async fn connect(cli_args: cli::CliArgs) -> Result<(), error::Error> {
     // forever, it ensure EOF is reached on the "reader" side, by shutting down the "writer"
     tcp_stream.shutdown().await?;
 
-    // let response = protocol::Response::from_stream(&mut tcp_stream).await?;
-    // handle_response(response, cli_args.just_info).await?;
+    let response = protocol::Response::from_stream(&mut tcp_stream).await?;
+    handle_response(response, cli_args.just_info).await?;
 
     Ok(())
 }
@@ -69,49 +69,27 @@ async fn handle_response(
     response: protocol::Response,
     just_info: bool,
 ) -> Result<(), error::Error> {
-    let result_line = response
-        .data
-        .get(0)
-        .ok_or_else(|| error::Error::ProtocolError("Missing the result line".to_string()))?;
-    match result_line.as_str() {
-        "OK" => {}
-        "ERROR" => {
-            if let Some(error_value) = response.data.get(1) {
-                return Err(error::Error::ProtocolError(format!("{}", error_value)));
-            }
-            // NOTE: If we were unable to determine what kind of error it was, it was not an error,
-            // it was something decided by god himself
-            return Err(error::Error::ProtocolError("HOLY_ERROR".to_string()));
-        }
-        _ => {
-            return Err(error::Error::ProtocolError(
-                "Invalid result line".to_string(),
-            ));
-        }
+    let response_packet: protocol::R_Packet = bitcode::decode(&response.packet)?;
+
+    match response_packet.result {
+        protocol::R_Result::OK => {},
+        protocol::R_Result::ERROR { error_message } => {
+            return Err(error::Error::ProtocolError(error_message));
+        },
     }
 
-    let command_line = response
-        .data
-        .get(1)
-        .ok_or_else(|| error::Error::ProtocolError("Missing the command line".to_string()))?;
-    match command_line.as_str() {
-        "STATUS" => {
-            let status_sub_command_line = response.data.get(2).ok_or_else(|| {
-                error::Error::ProtocolError("Missing the status sub command line".to_string())
-            })?;
-            match status_sub_command_line.as_str() {
-                "ALL" => {
-                    let status_json = response.data.get(3).ok_or_else(|| {
-                        error::Error::ProtocolError("Missing the status json".to_string())
-                    })?;
+    match response_packet.command {
+        protocol::R_Command::Status { sub_command } => {
+            match sub_command {
+                protocol::R_StatusSubCommand::ALL { output } => {
                     if just_info {
-                        print!("{}", status_json);
+                        print!("{}", output);
                     } else {
-                        println!("> {}", status_json);
+                        println!("> {}", output);
                     }
-                }
-                "CURRENT_AUDIO" => {
-                    if let Some(current_audio) = response.data.get(3) {
+                },
+                protocol::R_StatusSubCommand::CurrentAudio { output } => {
+                    if let Some(current_audio) = output {
                         if just_info {
                             print!("{}", current_audio);
                         } else {
@@ -124,77 +102,48 @@ async fn handle_response(
                             println!("> No audio is playing");
                         }
                     }
-                }
-                "IS_PAUSED" => {
-                    let is_paused = response.data.get(3).ok_or_else(|| {
-                        error::Error::ProtocolError("Missing is_paused".to_string())
-                    })?;
+                },
+                protocol::R_StatusSubCommand::IsPaused { output } => {
                     if just_info {
-                        print!("{}", is_paused);
+                        print!("{}", output);
                     } else {
-                        println!("> {}", is_paused);
+                        println!("> {}", output);
                     }
-                }
-                "IS_QUEUE_EMPTY" => {
-                    let is_queue_empty = response.data.get(3).ok_or_else(|| {
-                        error::Error::ProtocolError("Missing the is_queue_empty".to_string())
-                    })?;
+                },
+                protocol::R_StatusSubCommand::IsQueueEmpty { output } => {
                     if just_info {
-                        print!("{}", is_queue_empty);
+                        print!("{}", output);
                     } else {
-                        println!("> {}", is_queue_empty);
+                        println!("> {}", output);
                     }
-                }
-                _ => {
-                    return Err(error::Error::ProtocolError(
-                        "Invalid status sub command line".to_string(),
-                    ));
-                }
+                },
             }
-        }
-        "RELOAD" => {
+        },
+        protocol::R_Command::Reload => {
             println!("> Player reloaded");
-        }
-        "SEARCH" => {
-            // NOTE: here we skip(2) because we want an iterator on the audio labels only,
-            // ignoring the first 2 elements which would be "OK" and "SEARCH"
-            let mut audio_label_iter = response.data.iter().skip(2);
+        },
+        protocol::R_Command::Search { search_result } => {
+            let mut audio_label_iter = search_result.iter();
             while let Some(audio_label) = audio_label_iter.next() {
                 println!("-> {}", audio_label);
             }
-        }
-        "PLAYER" => {
-            let player_sub_command_line = response.data.get(2).ok_or_else(|| {
-                error::Error::ProtocolError("Missing the player sub command line".to_string())
-            })?;
-            match player_sub_command_line.as_str() {
-                "PLAY" => {
-                    let audio_label = response.data.get(3).ok_or_else(|| {
-                        error::Error::ProtocolError("Missing the audio label".to_string())
-                    })?;
-                    println!("> Playing {}", audio_label);
-                }
-                "RESUME" => {
+        },
+        protocol::R_Command::Player { sub_command } => {
+            match sub_command {
+                protocol::R_PlayerSubCommand::Play { audio_label } => {
+                    println!("> Playing {}", audio_label.purple());
+                },
+                protocol::R_PlayerSubCommand::Pause => {
                     println!("> Resuming playback")
-                }
-                "PAUSE" => {
+                },
+                protocol::R_PlayerSubCommand::Resume => {
                     println!("> Pausing playback");
-                }
-                "CLEAR" => {
+                },
+                protocol::R_PlayerSubCommand::Clear => {
                     println!("> Clearing player queue");
-                }
-                _ => {
-                    return Err(error::Error::ProtocolError(
-                        "Invalid player sub command line".to_string(),
-                    ));
-                }
+                },
             }
-        }
-        _ => {
-            return Err(error::Error::ProtocolError(
-                "Invalid command line".to_string(),
-            ));
-        }
+        },
     }
 
     Ok(())

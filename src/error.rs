@@ -62,3 +62,8 @@ impl From<serde_json::Error> for Error {
         Error::JsonError(value.to_string())
     }
 }
+impl From<bitcode::Error> for Error {
+    fn from(value: bitcode::Error) -> Self {
+        Error::DecoderError(value.to_string())
+    }
+}
