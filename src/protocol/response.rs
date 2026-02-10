@@ -1,27 +1,29 @@
 use crate::error;
-use tokio::io::AsyncBufReadExt;
+use tokio::io::AsyncReadExt;
 
-#[derive(Debug)]
-pub(crate) struct Response {
-    pub(crate) data: Vec<String>,
+#[derive(Debug, bitcode::Encode, bitcode::Decode, serde::Serialize, serde::Deserialize)]
+pub struct StatusData {
+    pub current_audio: Option<String>,
+    pub is_paused: bool,
+    pub is_queue_empty: bool,
+}
+
+#[derive(Debug, bitcode::Encode, bitcode::Decode)]
+pub enum Response {
+    OK(Option<String>),
+    SearchResults(Vec<String>),
+    StatusData(StatusData),
+    ERROR { message: String }
 }
 
 impl Response {
-    pub(crate) fn new() -> Self {
-        Response { data: Vec::new() }
-    }
-    pub(crate) async fn from_stream(
-        tcp_stream: &mut tokio::net::TcpStream,
-    ) -> Result<Self, error::Error> {
-        let mut value = Self::new();
-        let reader = tokio::io::BufReader::new(tcp_stream);
-        let mut lines = reader.lines();
-        while let Some(curr_line) = lines.next_line().await? {
-            value.data.push(curr_line);
-        }
+    pub async fn from_stream(tcp_stream: &mut tokio::net::TcpStream) -> Result<Self, error::Error> {
+        let mut buf: Vec<u8> = Vec::new();
+        tcp_stream.read_to_end(&mut buf).await?;
+        let value: Self = bitcode::decode(&buf)?;
         Ok(value)
     }
-    pub(crate) fn to_bytes(&self) -> Vec<u8> {
-        self.data.join("\n").into_bytes()
+    pub fn to_bytes(&self) -> Vec<u8> {
+        bitcode::encode(self)
     }
 }

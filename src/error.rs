@@ -1,6 +1,7 @@
 #[allow(dead_code)]
 #[derive(Debug)]
-pub(crate) enum Error {
+pub enum Error {
+    InvalidInputError(String),
     IOError(String),
     FSError(String),
     ParseError(String),
@@ -16,16 +17,17 @@ pub(crate) enum Error {
 impl std::string::ToString for Error {
     fn to_string(&self) -> String {
         match self {
-            Error::IOError(err_str) => format!("IOError {}", err_str),
-            Error::FSError(err_str) => format!("FSError {}", err_str),
-            Error::ParseError(err_str) => format!("ParseError {}", err_str),
-            Error::ProtocolError(err_str) => format!("ProtocolError {}", err_str),
-            Error::NotFoundError(err_str) => format!("NotFoundError {}", err_str),
-            Error::ChannelSendError(err_str) => format!("ChannelSendError {}", err_str),
-            Error::ChannelReceiveError(err_str) => format!("ChannelReceiveError {}", err_str),
-            Error::StreamError(err_str) => format!("StreamError {}", err_str),
-            Error::DecoderError(err_str) => format!("DecoderError {}", err_str),
-            Error::JsonError(err_str) => format!("JsonError {}", err_str),
+            Error::InvalidInputError(err_str) => format!("InvalidInputError: {}", err_str),
+            Error::IOError(err_str) => format!("IOError: {}", err_str),
+            Error::FSError(err_str) => format!("FSError: {}", err_str),
+            Error::ParseError(err_str) => format!("ParseError: {}", err_str),
+            Error::ProtocolError(err_str) => format!("ProtocolError: {}", err_str),
+            Error::NotFoundError(err_str) => format!("NotFoundError: {}", err_str),
+            Error::ChannelSendError(err_str) => format!("ChannelSendError: {}", err_str),
+            Error::ChannelReceiveError(err_str) => format!("ChannelReceiveError: {}", err_str),
+            Error::StreamError(err_str) => format!("StreamError: {}", err_str),
+            Error::DecoderError(err_str) => format!("DecoderError: {}", err_str),
+            Error::JsonError(err_str) => format!("JsonError: {}", err_str),
         }
     }
 }
@@ -52,6 +54,11 @@ impl From<rodio::decoder::DecoderError> for Error {
 }
 impl From<serde_json::Error> for Error {
     fn from(value: serde_json::Error) -> Self {
+        Error::JsonError(value.to_string())
+    }
+}
+impl From<bitcode::Error> for Error {
+    fn from(value: bitcode::Error) -> Self {
         Error::DecoderError(value.to_string())
     }
 }

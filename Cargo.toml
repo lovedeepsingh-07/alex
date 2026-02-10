@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-blake3 = "1.8.3"
+bitcode = { version = "0.6.9", features = ["serde"] }
 clap = { version = "4.5.53", features = ["derive"] }
 colored = "3.0.0"
 env_logger = "0.11.8"
@@ -20,6 +20,4 @@ tokio = { version = "1.48.0", features = ["full"] }
 walkdir = "2.5.0"
 
 [profile.dev]
-opt-level = 0
-debug = 1
 incremental = true

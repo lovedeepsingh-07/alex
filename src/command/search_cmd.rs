@@ -1,25 +1,23 @@
-use crate::{error, player, protocol::response};
+use crate::{error, player, protocol};
 
-pub(crate) async fn handle(
+pub async fn handle(
     player: &mut player::Player,
     search_term: Option<String>,
-) -> Result<response::Response, error::Error> {
+) -> Result<protocol::Response, error::Error> {
     match search_term {
-        Some(_search_term) => {
+        Some(search_term) => {
+            let _ = search_term;
             log::warn!("searching with a term is not implemented yet");
-            return Ok(response::Response {
-                data: vec!["ERROR".to_string(), "SEARCH".to_string()],
+
+            return Ok(protocol::Response::ERROR {
+                message: String::from("Searching with a term is not implemented yet"),
             });
         }
         None => {
             log::debug!("Searching for audio files");
-            let mut response = response::Response::new();
-            response.data.push("OK".to_string());
-            response.data.push("SEARCH".to_string());
-            for (label, _) in &player.index {
-                response.data.push(label.clone());
-            }
-            return Ok(response);
+            let search_results = player.index.iter().map(|(label, _)|  label.clone()).collect::<Vec<String>>();
+
+            return Ok(protocol::Response::SearchResults(search_results));
         }
     }
 }
