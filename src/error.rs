@@ -1,6 +1,7 @@
 #[allow(dead_code)]
 #[derive(Debug)]
 pub enum Error {
+    InvalidInputError(String),
     IOError(String),
     FSError(String),
     ParseError(String),
@@ -11,12 +12,12 @@ pub enum Error {
     StreamError(String),
     DecoderError(String),
     JsonError(String),
-    FlatbufferError(String),
 }
 
 impl std::string::ToString for Error {
     fn to_string(&self) -> String {
         match self {
+            Error::InvalidInputError(err_str) => format!("InvalidInputError: {}", err_str),
             Error::IOError(err_str) => format!("IOError: {}", err_str),
             Error::FSError(err_str) => format!("FSError: {}", err_str),
             Error::ParseError(err_str) => format!("ParseError: {}", err_str),
@@ -27,7 +28,6 @@ impl std::string::ToString for Error {
             Error::StreamError(err_str) => format!("StreamError: {}", err_str),
             Error::DecoderError(err_str) => format!("DecoderError: {}", err_str),
             Error::JsonError(err_str) => format!("JsonError: {}", err_str),
-            Error::FlatbufferError(err_str) => format!("FlatbufferError: {}", err_str),
         }
     }
 }
@@ -50,11 +50,6 @@ impl From<rodio::stream::StreamError> for Error {
 impl From<rodio::decoder::DecoderError> for Error {
     fn from(value: rodio::decoder::DecoderError) -> Self {
         Error::DecoderError(value.to_string())
-    }
-}
-impl From<flatbuffers::InvalidFlatbuffer> for Error {
-    fn from(value: flatbuffers::InvalidFlatbuffer) -> Self {
-        Error::FlatbufferError(value.to_string())
     }
 }
 impl From<serde_json::Error> for Error {

@@ -13,9 +13,7 @@ pub async fn run(server_port: u16) -> Result<(), error::Error> {
         player.update_state()?;
 
         let request = protocol::Request::from_stream(&mut tcp_stream).await?;
-        let cmd = request.to_cmd()?;
-
-        let response = command::handle(cmd, &mut player).await?;
+        let response = command::handle(request, &mut player).await?;
 
         tcp_stream.write_all(&response.to_bytes()).await?;
         // NOTE: checkout the `main.rs` file for note regarding why this is here
