@@ -7,7 +7,7 @@ pub struct CliArgs {
     /// Server port
     pub port: u16,
     #[arg(long, global = true)]
-    /// Pass this argument when calling the `status` subcommand from another program
+    /// Pass this argument when calling the "status" subcommands from another program
     pub just_info: bool,
     #[command(subcommand)]
     pub sub_command: SubCommand,
@@ -15,7 +15,7 @@ pub struct CliArgs {
 
 #[derive(Debug, clap::Subcommand, PartialEq)]
 pub enum SubCommand {
-    /// Run the music daemon
+    /// Start the daemon
     Daemon,
     /// Get information such as which song is playing, whether playback is paused or not etc
     Status {
@@ -48,40 +48,46 @@ pub enum StatusSubCommand {
 
 pub fn generate_request(sub_command: &SubCommand) -> Result<protocol::Request, error::Error> {
     match sub_command {
-        SubCommand::Daemon => {},
+        SubCommand::Daemon => {}
         SubCommand::Status { sub_command: _ } => {
             return Ok(protocol::Request::Status);
-        },
+        }
         SubCommand::Reload => {
             return Ok(protocol::Request::Reload);
-        },
+        }
         SubCommand::Search { search_term } => {
-            return Ok(protocol::Request::Search { search_term: search_term.clone() });
-        },
+            return Ok(protocol::Request::Search {
+                search_term: search_term.clone(),
+            });
+        }
         SubCommand::Play { audio_label } => {
             let audio_label = audio_label.trim().to_string();
             if audio_label.len() == 0 {
-                return Err(error::Error::InvalidInputError("You must provide and audio_label with the play command".to_string()));
+                return Err(error::Error::InvalidInputError(
+                    "You must provide and audio_label with the play command".to_string(),
+                ));
             }
             return Ok(protocol::Request::Player {
                 sub_command: protocol::PlayerSubCommand::Play { audio_label },
-            })
-        },
+            });
+        }
         SubCommand::Pause => {
             return Ok(protocol::Request::Player {
                 sub_command: protocol::PlayerSubCommand::Pause,
-            })
-        },
+            });
+        }
         SubCommand::Resume => {
             return Ok(protocol::Request::Player {
                 sub_command: protocol::PlayerSubCommand::Resume,
-            })
-        },
+            });
+        }
         SubCommand::Clear => {
             return Ok(protocol::Request::Player {
                 sub_command: protocol::PlayerSubCommand::Clear,
-            })
-        },
+            });
+        }
     }
-    return Err(error::Error::ParseError("Failed to correctly parse CLI arguments".to_string()));
+    return Err(error::Error::ParseError(
+        "Failed to correctly parse CLI arguments".to_string(),
+    ));
 }

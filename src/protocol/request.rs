@@ -13,12 +13,8 @@ pub enum PlayerSubCommand {
 pub enum Request {
     Status,
     Reload,
-    Search {
-        search_term: Option<String>,
-    },
-    Player {
-        sub_command: PlayerSubCommand,
-    },
+    Search { search_term: Option<String> },
+    Player { sub_command: PlayerSubCommand },
 }
 
 impl Request {
