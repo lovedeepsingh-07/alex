@@ -29,17 +29,23 @@ async fn main() {
         return;
     }
 
-    match connect(cli_args).await {
+    let request = match cli::generate_request(&cli_args.sub_command){
+        Ok(out) => out,
+        Err(e) => {
+            log::error!("Failed to generate request from CLI arguments, {}", e.to_string());
+            return;
+        }
+    };
+    match connect(cli_args, request).await {
         Ok(_) => {}
         Err(e) => {
-            log::error!("Failed to make request, {}", e.to_string());
+            log::error!("Failed to communicate with daemon, {}", e.to_string());
+            return;
         }
     };
 }
 
-async fn connect(cli_args: cli::CliArgs) -> Result<(), error::Error> {
-    let request = cli::generate_request(&cli_args.sub_command)?;
-
+async fn connect(cli_args: cli::CliArgs, request: protocol::Request) -> Result<(), error::Error> {
     let mut tcp_stream =
         match tokio::net::TcpStream::connect(format!("127.0.0.1:{}", cli_args.port)).await {
             Ok(out) => out,
@@ -73,8 +79,8 @@ async fn handle_response(
     response: protocol::Response,
 ) -> Result<(), error::Error> {
     match response {
-        protocol::Response::PlaybackStarted { audio_label } => {
-            println!("> Playing {}", audio_label);
+        protocol::Response::PlaybackStarted { input } => {
+            println!("> Playing {}", input.purple());
         }
         protocol::Response::Paused => {
             println!("> Pausing playback")
@@ -89,9 +95,9 @@ async fn handle_response(
             println!("> Player reloaded");
         }
         protocol::Response::SearchResults(search_results) => {
-            let mut audio_label_iter = search_results.iter();
-            while let Some(audio_label) = audio_label_iter.next() {
-                println!("-> {}", audio_label);
+            let mut search_results_iter = search_results.iter();
+            while let Some(item) = search_results_iter.next() {
+                println!("-> {}", item);
             }
         }
         protocol::Response::StatusData(status_data) => {

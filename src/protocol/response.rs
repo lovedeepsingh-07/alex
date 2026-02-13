@@ -10,7 +10,7 @@ pub struct StatusData {
 
 #[derive(Debug, bitcode::Encode, bitcode::Decode)]
 pub enum Response {
-    PlaybackStarted { audio_label: String },
+    PlaybackStarted { input: String },
     Paused,
     Resumed,
     Cleared,

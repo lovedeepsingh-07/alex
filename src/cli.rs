@@ -26,8 +26,8 @@ pub enum SubCommand {
     Reload,
     /// Search through the audio index
     Search { search_term: Option<String> },
-    /// Play an audio
-    Play { audio_label: String },
+    /// Play an audio [audio path (local) or slug (from daemon's index)]
+    Play { input: String },
     /// Pause playback (does nothing if already paused)
     Pause,
     /// Resume playback (does nothing if already resumed)
@@ -60,15 +60,25 @@ pub fn generate_request(sub_command: &SubCommand) -> Result<protocol::Request, e
                 search_term: search_term.clone(),
             });
         }
-        SubCommand::Play { audio_label } => {
-            let audio_label = audio_label.trim().to_string();
-            if audio_label.len() == 0 {
+        SubCommand::Play { input} => {
+            let input_path = std::path::Path::new(input);
+            if let Ok(path_exists) = std::fs::exists(input_path) {
+                if path_exists {
+                    let abs_path = std::fs::canonicalize(input_path)?;
+                    let input_path = abs_path.to_string_lossy().to_string();
+                    return Ok(protocol::Request::Player {
+                        sub_command: protocol::PlayerSubCommand::Play { input: input_path, is_path: true },
+                    });
+                }
+            }
+            let input = input.trim().to_string();
+            if input.len() == 0 {
                 return Err(error::Error::InvalidInputError(
-                    "You must provide and audio_label with the play command".to_string(),
+                    "You must provide a input with the play command".to_string(),
                 ));
             }
             return Ok(protocol::Request::Player {
-                sub_command: protocol::PlayerSubCommand::Play { audio_label },
+                sub_command: protocol::PlayerSubCommand::Play { input, is_path: false },
             });
         }
         SubCommand::Pause => {

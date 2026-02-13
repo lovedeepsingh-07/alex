@@ -6,16 +6,16 @@ pub async fn handle(
     sub_command: protocol::PlayerSubCommand,
 ) -> protocol::Response {
     match sub_command {
-        protocol::PlayerSubCommand::Play { audio_label } => {
-            match player.play(&audio_label) {
+        protocol::PlayerSubCommand::Play { input, is_path } => {
+            match player.play(&input, is_path) {
                 Ok(_) => {
                     log::debug!(
                         "Playing {quote}{}{quote}",
-                        audio_label.purple(),
+                        input.purple(),
                         quote = "\"".purple()
                     );
                     return protocol::Response::PlaybackStarted {
-                        audio_label: audio_label.to_string(),
+                        input: input.to_string(),
                     };
                 }
                 Err(e) => {
