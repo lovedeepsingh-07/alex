@@ -33,7 +33,6 @@ pub fn index_audio_files(folder_path: &std::path::PathBuf) -> Result<AudioIndex,
             index.insert(metadata.slug.clone(), metadata);
         };
     }
-    log::info!("{:#?}", index);
     Ok(index)
 }
 
@@ -72,7 +71,7 @@ fn extract_metadata(entry_path: &std::path::Path) -> Result<Audio, error::Error>
     let tagged_file = lofty::read_from_path(entry_path)?;
     let duration = tagged_file.properties().duration();
 
-    output.slug = filter_string(file_name_without_ext).to_lowercase();
+    output.slug = sanitize_string(file_name_without_ext).to_lowercase();
     output.name_without_ext = file_name_without_ext.to_string();
     output.extension = extension;
     output.path = entry_path.to_path_buf();
@@ -80,14 +79,14 @@ fn extract_metadata(entry_path: &std::path::Path) -> Result<Audio, error::Error>
     Ok(output)
 }
 
-fn filter_string(input: &str) -> String {
+fn sanitize_string(input: &str) -> String {
     let mut output = String::new();
     for c in input.chars() {
-        if c.is_alphanumeric() {
-            output.push(c);
-        } else {
-            output.push('_');
-        }
+        let filtered_char = match c {
+            'a'..'z' | 'A'..'Z' | '0'..'9' => c,
+            _ => '_'
+        };
+        output.push(filtered_char);
     }
     output
 }
