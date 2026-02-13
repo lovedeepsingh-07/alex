@@ -10,10 +10,14 @@ pub struct StatusData {
 
 #[derive(Debug, bitcode::Encode, bitcode::Decode)]
 pub enum Response {
-    OK(Option<String>),
+    PlaybackStarted { audio_label: String },
+    Paused,
+    Resumed,
+    Cleared,
+    Reloaded,
     SearchResults(Vec<String>),
     StatusData(StatusData),
-    ERROR { message: String }
+    ERROR { message: String },
 }
 
 impl Response {

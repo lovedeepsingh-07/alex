@@ -1,5 +1,5 @@
 #[allow(dead_code)]
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum Error {
     InvalidInputError(String),
     IOError(String),
@@ -12,6 +12,7 @@ pub enum Error {
     StreamError(String),
     DecoderError(String),
     JsonError(String),
+    LoftyError(String),
 }
 
 impl std::string::ToString for Error {
@@ -28,6 +29,7 @@ impl std::string::ToString for Error {
             Error::StreamError(err_str) => format!("StreamError: {}", err_str),
             Error::DecoderError(err_str) => format!("DecoderError: {}", err_str),
             Error::JsonError(err_str) => format!("JsonError: {}", err_str),
+            Error::LoftyError(err_str) => format!("LoftyError: {}", err_str),
         }
     }
 }
@@ -60,5 +62,10 @@ impl From<serde_json::Error> for Error {
 impl From<bitcode::Error> for Error {
     fn from(value: bitcode::Error) -> Self {
         Error::DecoderError(value.to_string())
+    }
+}
+impl From<lofty::error::LoftyError> for Error {
+    fn from(value: lofty::error::LoftyError) -> Self {
+        Error::LoftyError(value.to_string())
     }
 }

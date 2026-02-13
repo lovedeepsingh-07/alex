@@ -1,10 +1,10 @@
-use crate::{error, player, protocol};
+use crate::{player, protocol};
 use colored::Colorize;
 
 pub async fn handle(
     player: &mut player::Player,
     sub_command: protocol::PlayerSubCommand,
-) -> Result<protocol::Response, error::Error> {
+) -> protocol::Response {
     match sub_command {
         protocol::PlayerSubCommand::Play { audio_label } => {
             match player.play(&audio_label) {
@@ -14,30 +14,32 @@ pub async fn handle(
                         audio_label.purple(),
                         quote = "\"".purple()
                     );
-                    return Ok(protocol::Response::OK(Some(audio_label.to_string())));
-                },
+                    return protocol::Response::PlaybackStarted {
+                        audio_label: audio_label.to_string(),
+                    };
+                }
                 Err(e) => {
                     log::error!("Failed to play the audio: {}", e.to_string());
-                    return Ok(protocol::Response::ERROR {
+                    return protocol::Response::ERROR {
                         message: String::from("Failed to play the audio"),
-                    })
+                    };
                 }
             };
         }
         protocol::PlayerSubCommand::Pause => {
             log::debug!("Pausing playback");
             player.pause();
-            return Ok(protocol::Response::OK(None));
+            return protocol::Response::Paused;
         }
         protocol::PlayerSubCommand::Resume => {
             log::debug!("Resuming playback");
             player.resume();
-            return Ok(protocol::Response::OK(None));
+            return protocol::Response::Resumed;
         }
         protocol::PlayerSubCommand::Clear => {
             log::debug!("Clearing player queue");
             player.clear();
-            return Ok(protocol::Response::OK(None));
+            return protocol::Response::Cleared;
         }
     }
 }
