@@ -16,7 +16,7 @@ pub struct CliArgs {
 #[derive(Debug, clap::Subcommand, PartialEq)]
 pub enum SubCommand {
     /// Start the daemon
-    Daemon,
+    Daemon { folder_path: String },
     /// Get information such as which song is playing, whether playback is paused or not etc
     Status {
         #[command(subcommand)]
@@ -48,7 +48,7 @@ pub enum StatusSubCommand {
 
 pub fn generate_request(sub_command: &SubCommand) -> Result<protocol::Request, error::Error> {
     match sub_command {
-        SubCommand::Daemon => {}
+        SubCommand::Daemon { folder_path: _ } => {}
         SubCommand::Status { sub_command: _ } => {
             return Ok(protocol::Request::Status);
         }

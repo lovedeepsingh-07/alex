@@ -10,6 +10,7 @@ pub struct PlayerState {
 }
 
 pub struct Player {
+    folder_path: std::path::PathBuf,
     pub state: PlayerState,
     #[allow(dead_code)]
     output: rodio::OutputStream,
@@ -18,7 +19,7 @@ pub struct Player {
 }
 
 impl Player {
-    pub fn new() -> Result<Self, error::Error> {
+    pub fn new(folder_path: std::path::PathBuf) -> Result<Self, error::Error> {
         let state = PlayerState {
             current_audio: None,
             is_paused: false,
@@ -27,9 +28,11 @@ impl Player {
 
         let output = rodio::OutputStreamBuilder::open_default_stream()?;
         let sink = rodio::Sink::connect_new(&output.mixer());
-        let index = indexer::index_audio_files()?;
+        let index = indexer::index_audio_files(&folder_path)?;
+        log::info!("{:#?}", index);
 
         Ok(Player {
+            folder_path,
             output,
             sink,
             index,
@@ -80,7 +83,7 @@ impl Player {
         self.sink.stop();
     }
     pub fn reload(&mut self) -> Result<(), error::Error> {
-        self.index = indexer::index_audio_files()?;
+        self.index = indexer::index_audio_files(&self.folder_path)?;
         Ok(())
     }
 }

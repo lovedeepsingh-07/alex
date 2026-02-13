@@ -19,8 +19,8 @@ async fn main() {
 
     let cli_args = cli::CliArgs::parse();
 
-    if cli_args.sub_command == cli::SubCommand::Daemon {
-        match daemon::run(cli_args.port).await {
+    if let cli::SubCommand::Daemon { folder_path } = cli_args.sub_command {
+        match daemon::run(cli_args.port, folder_path).await {
             Ok(_) => {}
             Err(e) => {
                 log::error!("Failed to run daemon, {}", e.to_string());
