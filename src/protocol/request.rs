@@ -3,7 +3,10 @@ use tokio::io::AsyncReadExt;
 
 #[derive(Debug, bitcode::Encode, bitcode::Decode)]
 pub enum PlayerSubCommand {
-    Play { audio_label: String },
+    Play {
+        input: String,
+        is_path: bool,
+    },
     Pause,
     Resume,
     Clear,

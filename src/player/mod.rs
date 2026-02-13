@@ -29,7 +29,6 @@ impl Player {
         let output = rodio::OutputStreamBuilder::open_default_stream()?;
         let sink = rodio::Sink::connect_new(&output.mixer());
         let index = indexer::index_audio_files(&folder_path)?;
-        log::info!("{:#?}", index);
 
         Ok(Player {
             folder_path,
@@ -46,9 +45,19 @@ impl Player {
         }
         Ok(())
     }
-    pub fn play(&mut self, audio_label: &str) -> Result<(), error::Error> {
-        let audio = self.index.get(audio_label).ok_or_else(|| {
-            error::Error::NotFoundError("The requested audio filese does not exist".to_string())
+    pub fn play(&mut self, input: &str, is_path: bool) -> Result<(), error::Error> {
+        if is_path {
+            let audio_file = std::fs::File::open(input)?;
+            let audio_source = rodio::Decoder::builder().with_data(audio_file).build()?;
+
+            self.clear();
+            self.sink.append(audio_source);
+            self.resume();
+            self.state.current_audio = Some(input.to_string());
+            return Ok(());
+        }
+        let audio = self.index.get(input).ok_or_else(|| {
+            error::Error::NotFoundError("The requested audio file does not exist".to_string())
         })?;
 
         let audio_path = audio.path.clone();
@@ -58,7 +67,7 @@ impl Player {
         self.clear();
         self.sink.append(audio_source);
         self.resume();
-        self.state.current_audio = Some(audio_label.to_string());
+        self.state.current_audio = Some(input.to_string());
         Ok(())
     }
     pub fn resume(&mut self) {
