@@ -15,7 +15,7 @@ pub struct CliArgs {
 
 #[derive(Debug, clap::Subcommand, PartialEq)]
 pub enum SubCommand {
-    /// Start the daemon
+    /// Start the daemon by providing the path to your songs folder
     Daemon { folder_path: String },
     /// Get information such as which song is playing, whether playback is paused or not etc
     Status {
@@ -97,7 +97,7 @@ pub fn generate_request(sub_command: &SubCommand) -> Result<protocol::Request, e
             });
         }
     }
-    return Err(error::Error::ParseError(
+    return Err(error::Error::IOError(
         "Failed to correctly parse CLI arguments".to_string(),
     ));
 }

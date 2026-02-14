@@ -36,6 +36,7 @@ async fn main() {
             return;
         }
     };
+
     match connect(cli_args, request).await {
         Ok(_) => {}
         Err(e) => {
@@ -117,6 +118,7 @@ fn handle_status_response(
     if let cli::SubCommand::Status { sub_command } = cli_args.sub_command {
         match sub_command {
             Some(cli::StatusSubCommand::CurrentAudio) => {
+                // NOTE: Here we go through all possibilities of (Option<String>, bool)
                 match (status_data.current_audio, cli_args.just_info) {
                     (Some(current_audio), true) => print!("{}", current_audio),
                     (Some(current_audio), false) => {

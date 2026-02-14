@@ -25,6 +25,7 @@ pub async fn run(server_port: u16, folder_path: String) -> Result<(), error::Err
         let response = handlers::handle(request, &mut player).await;
 
         tcp_stream.write_all(&response.to_bytes()).await?;
+
         // NOTE: checkout the `main.rs` file for note regarding why this is here
         tcp_stream.shutdown().await?;
     }
