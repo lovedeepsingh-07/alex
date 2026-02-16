@@ -6,10 +6,14 @@ pub async fn run(server_port: u16, folder_path: String) -> Result<(), error::Err
     let folder_path = std::path::PathBuf::from(folder_path);
     let abs_folder_path = std::fs::canonicalize(folder_path)?;
     if !abs_folder_path.exists() {
-        return Err(error::Error::InvalidInputError("Path provided to the daemon DOES_NOT exist".to_string()));
+        return Err(error::Error::InvalidInputError(
+            "Path provided to the daemon DOES_NOT exist".to_string(),
+        ));
     }
     if !abs_folder_path.is_dir() || abs_folder_path.is_file() {
-        return Err(error::Error::InvalidInputError("Path provided to the daemon IS_NOT a valid folder".to_string()));
+        return Err(error::Error::InvalidInputError(
+            "Path provided to the daemon IS_NOT a valid folder".to_string(),
+        ));
     }
 
     let listener = tokio::net::TcpListener::bind(format!("127.0.0.1:{}", server_port)).await?;

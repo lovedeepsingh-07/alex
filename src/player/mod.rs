@@ -15,7 +15,7 @@ pub struct Player {
     #[allow(dead_code)]
     output: rodio::OutputStream,
     sink: rodio::Sink,
-    pub index: indexer::AudioIndex,
+    pub storage: indexer::Storage,
 }
 
 impl Player {
@@ -28,13 +28,13 @@ impl Player {
 
         let output = rodio::OutputStreamBuilder::open_default_stream()?;
         let sink = rodio::Sink::connect_new(&output.mixer());
-        let index = indexer::index_audio_files(&folder_path)?;
+        let storage = indexer::index_audio_files(&folder_path)?;
 
         Ok(Player {
             folder_path,
             output,
             sink,
-            index,
+            storage,
             state,
         })
     }
@@ -56,7 +56,7 @@ impl Player {
             self.state.current_audio = Some(input.to_string());
             return Ok(());
         }
-        let audio = self.index.get(input).ok_or_else(|| {
+        let audio = self.storage.audios.get(input).ok_or_else(|| {
             error::Error::NotFoundError("The requested audio file does not exist".to_string())
         })?;
 
@@ -92,7 +92,7 @@ impl Player {
         self.sink.stop();
     }
     pub fn reload(&mut self) -> Result<(), error::Error> {
-        self.index = indexer::index_audio_files(&self.folder_path)?;
+        self.storage = indexer::index_audio_files(&self.folder_path)?;
         Ok(())
     }
 }

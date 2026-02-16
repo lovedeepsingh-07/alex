@@ -60,14 +60,17 @@ pub fn generate_request(sub_command: &SubCommand) -> Result<protocol::Request, e
                 search_term: search_term.clone(),
             });
         }
-        SubCommand::Play { input} => {
+        SubCommand::Play { input } => {
             let input_path = std::path::Path::new(input);
             if let Ok(path_exists) = std::fs::exists(input_path) {
                 if path_exists {
                     let abs_path = std::fs::canonicalize(input_path)?;
                     let input_path = abs_path.to_string_lossy().to_string();
                     return Ok(protocol::Request::Player {
-                        sub_command: protocol::PlayerSubCommand::Play { input: input_path, is_path: true },
+                        sub_command: protocol::PlayerSubCommand::Play {
+                            input: input_path,
+                            is_path: true,
+                        },
                     });
                 }
             }
@@ -78,7 +81,10 @@ pub fn generate_request(sub_command: &SubCommand) -> Result<protocol::Request, e
                 ));
             }
             return Ok(protocol::Request::Player {
-                sub_command: protocol::PlayerSubCommand::Play { input, is_path: false },
+                sub_command: protocol::PlayerSubCommand::Play {
+                    input,
+                    is_path: false,
+                },
             });
         }
         SubCommand::Pause => {

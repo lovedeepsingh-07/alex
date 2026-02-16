@@ -9,13 +9,19 @@ pub struct StatusData {
 }
 
 #[derive(Debug, bitcode::Encode, bitcode::Decode)]
+pub struct SearchResult {
+    pub slug: String,
+    pub score: f64,
+}
+
+#[derive(Debug, bitcode::Encode, bitcode::Decode)]
 pub enum Response {
     PlaybackStarted { input: String },
     Paused,
     Resumed,
     Cleared,
     Reloaded,
-    SearchResults(Vec<String>),
+    SearchResults(Vec<SearchResult>),
     StatusData(StatusData),
     ERROR { message: String },
 }

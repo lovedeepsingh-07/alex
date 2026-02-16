@@ -4,7 +4,7 @@
   ...
 }: {
   default = pkgs.mkShell {
-    nativeBuildInputs = [pkgs.alejandra rust_pkg pkgs.pkg-config pkgs.flatbuffers];
+    nativeBuildInputs = [pkgs.alejandra rust_pkg pkgs.pkg-config];
     buildInputs = [pkgs.alsa-lib];
     shellHook = "zsh";
   };

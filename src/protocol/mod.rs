@@ -4,4 +4,5 @@ pub use request::Request;
 
 pub mod response;
 pub use response::Response;
+pub use response::SearchResult;
 pub use response::StatusData;
