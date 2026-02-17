@@ -1,36 +1,64 @@
-use crate::{error, handlers, player, protocol};
-use colored::Colorize;
-use tokio::io::AsyncWriteExt;
+use crate::{error, protocol, services};
+use tokio::{
+    sync::{mpsc, watch},
+    task::JoinSet,
+};
+
+#[derive(Debug)]
+pub struct ResponseCarrier {
+    pub request: protocol::Request,
+    pub response_tx: mpsc::Sender<protocol::Response>,
+}
 
 pub async fn run(server_port: u16, folder_path: String) -> Result<(), error::Error> {
-    let folder_path = std::path::PathBuf::from(folder_path);
-    let abs_folder_path = std::fs::canonicalize(folder_path)?;
-    if !abs_folder_path.exists() {
-        return Err(error::Error::InvalidInputError(
-            "Path provided to the daemon DOES_NOT exist".to_string(),
-        ));
+    let mut tasks: JoinSet<services::TaskResult> = JoinSet::new();
+    let (shutdown_tx, shutdown_rx) = watch::channel(false);
+
+    services::server::spawn_task(services::server::ServerProps {
+        tasks: &mut tasks,
+        shutdown_rx: shutdown_rx.clone(),
+        server_port,
+        folder_path,
+    });
+
+    tokio::select! {
+        join_result = tasks.join_next() => {
+            if let Some(join_result) = join_result {
+                let _ = shutdown_tx.send(true);
+                match join_result {
+                    Ok(services::TaskResult::Completed) => {
+                        log::error!("Task returned unexpectedly");
+                    },
+                    Ok(services::TaskResult::Shutdown) => {
+                        log::debug!("Shutting down Task");
+                    },
+                    Ok(services::TaskResult::Failed(e)) => {
+                        log::error!("Task failed with error, {}", e.to_string());
+                    },
+                    Err(e) => {
+                        log::error!("Failed to join task, {}", e.to_string());
+                    },
+                }
+            }
+        }
+        _ = tokio::signal::ctrl_c() => {
+            let _ = shutdown_tx.send(true);
+            log::info!("Shutting down...");
+            while let Some(res) = tasks.join_next().await {
+                match res {
+                    Ok(services::TaskResult::Completed) => {
+                        log::error!("Task returned unexpectedly");
+                    },
+                    Ok(services::TaskResult::Shutdown) => {
+                        log::debug!("Shutting down Task");
+                    },
+                    Ok(services::TaskResult::Failed(e)) => {
+                        log::error!("Task failed with error, {}", e.to_string());
+                    },
+                    Err(e) => log::error!("Join error: {}", e),
+                }
+            }
+        }
     }
-    if !abs_folder_path.is_dir() || abs_folder_path.is_file() {
-        return Err(error::Error::InvalidInputError(
-            "Path provided to the daemon IS_NOT a valid folder".to_string(),
-        ));
-    }
-
-    let listener = tokio::net::TcpListener::bind(format!("127.0.0.1:{}", server_port)).await?;
-    let mut player = player::Player::new(abs_folder_path)?;
-
-    log::info!("daemon running on {}", format!(":{}", server_port).blue());
-
-    loop {
-        let (mut tcp_stream, _) = listener.accept().await?;
-        player.update_state()?;
-
-        let request = protocol::Request::from_stream(&mut tcp_stream).await?;
-        let response = handlers::handle(request, &mut player).await;
-
-        tcp_stream.write_all(&response.to_bytes()).await?;
-
-        // NOTE: checkout the `main.rs` file for note regarding why this is here
-        tcp_stream.shutdown().await?;
-    }
+    Ok(())
 }

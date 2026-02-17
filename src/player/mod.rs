@@ -26,7 +26,8 @@ impl Player {
             is_queue_empty: true,
         };
 
-        let output = rodio::OutputStreamBuilder::open_default_stream()?;
+        let mut output = rodio::OutputStreamBuilder::open_default_stream()?;
+        output.log_on_drop(false);
         let sink = rodio::Sink::connect_new(&output.mixer());
         let storage = indexer::index_audio_files(&folder_path)?;
 

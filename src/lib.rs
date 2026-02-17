@@ -5,4 +5,5 @@ pub mod error;
 pub mod handlers;
 pub mod player;
 pub mod protocol;
+pub mod services;
 pub mod utils;
