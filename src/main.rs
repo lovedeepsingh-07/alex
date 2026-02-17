@@ -1,10 +1,4 @@
-pub mod cli;
-pub mod constants;
-pub mod daemon;
-pub mod error;
-pub mod handlers;
-pub mod player;
-pub mod protocol;
+use alex::{cli, daemon, error, protocol};
 
 use clap::Parser;
 use colored::Colorize;
@@ -29,10 +23,13 @@ async fn main() {
         return;
     }
 
-    let request = match cli::generate_request(&cli_args.sub_command){
+    let request = match cli::generate_request(&cli_args.sub_command) {
         Ok(out) => out,
         Err(e) => {
-            log::error!("Failed to generate request from CLI arguments, {}", e.to_string());
+            log::error!(
+                "Failed to generate request from CLI arguments, {}",
+                e.to_string()
+            );
             return;
         }
     };
@@ -98,7 +95,7 @@ async fn handle_response(
         protocol::Response::SearchResults(search_results) => {
             let mut search_results_iter = search_results.iter();
             while let Some(item) = search_results_iter.next() {
-                println!("-> {}", item);
+                println!("-> {}", item.slug);
             }
         }
         protocol::Response::StatusData(status_data) => {

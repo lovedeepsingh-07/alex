@@ -30,6 +30,8 @@ dependencies = [
  "rodio",
  "serde",
  "serde_json",
+ "stop-words",
+ "strsim",
  "tokio",
  "walkdir",
 ]
@@ -1033,6 +1035,15 @@ checksum = "17129e116933cf371d018bb80ae557e889637989d8638274fb25622827b03881"
 dependencies = [
  "libc",
  "windows-sys 0.60.2",
+]
+
+[[package]]
+name = "stop-words"
+version = "0.9.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "645a3d441ccf4bf47f2e4b7681461986681a6eeea9937d4c3bc9febd61d17c71"
+dependencies = [
+ "serde_json",
 ]
 
 [[package]]
