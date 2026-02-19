@@ -1,6 +1,6 @@
 use crate::{player, protocol};
 
-pub async fn handle(player: &mut player::Player) -> protocol::Response {
+pub fn handle(player: &mut player::Player) -> protocol::Response {
     return protocol::Response::StatusData(protocol::StatusData {
         current_audio: player.state.current_audio.clone(),
         is_paused: player.state.is_paused,

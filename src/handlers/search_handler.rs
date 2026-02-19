@@ -1,10 +1,7 @@
 use crate::{player, protocol, utils};
 use std::collections::HashSet;
 
-pub async fn handle(
-    player: &mut player::Player,
-    search_term: Option<String>,
-) -> protocol::Response {
+pub fn handle(player: &mut player::Player, search_term: Option<String>) -> protocol::Response {
     match search_term {
         Some(search_term) => {
             log::debug!(

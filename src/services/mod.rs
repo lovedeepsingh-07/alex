@@ -1,13 +1,13 @@
-pub mod server;
 pub mod playback;
+pub mod server;
 
-use tokio::sync::mpsc;
 use crate::{error, protocol};
+use tokio::sync::mpsc;
 
 #[derive(Debug)]
 pub struct RequestCarrier {
     request: protocol::Request,
-    response_tx: mpsc::Sender<protocol::Response>
+    response_tx: mpsc::Sender<protocol::Response>,
 }
 
 #[derive(Debug)]

@@ -14,13 +14,15 @@ pub async fn run(server_port: u16, folder_path: String) -> Result<(), error::Err
         shutdown_rx: shutdown_rx.clone(),
         folder_path,
         request_carrier_rx,
-    }).await?;
+    })
+    .await?;
     services::server::spawn_task(services::server::ServerProps {
         tasks: &mut tasks,
         shutdown_rx: shutdown_rx.clone(),
         server_port,
         request_carrier_tx,
-    }).await?;
+    })
+    .await?;
 
     tokio::select! {
         join_result = tasks.join_next() => {
@@ -44,13 +46,13 @@ fn handle_task_result(result: Result<services::TaskResult, tokio::task::JoinErro
     match result {
         Ok(services::TaskResult::Completed) => {
             log::error!("Task returned unexpectedly");
-        },
+        }
         Ok(services::TaskResult::Shutdown) => {
             log::debug!("Shutting down Task");
-        },
+        }
         Ok(services::TaskResult::Failed(e)) => {
             log::error!("Task failed with error, {}", e.to_string());
-        },
+        }
         Err(e) => log::error!("Join error: {}", e),
     }
 }
