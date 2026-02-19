@@ -1,7 +1,7 @@
 use crate::{player, protocol};
 use colored::Colorize;
 
-pub async fn handle(
+pub fn handle(
     player: &mut player::Player,
     sub_command: protocol::PlayerSubCommand,
 ) -> protocol::Response {

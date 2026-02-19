@@ -1,6 +1,7 @@
 #[allow(dead_code)]
 #[derive(Debug, PartialEq)]
 pub enum Error {
+    RuntimeError(String),
     InvalidInputError(String),
     NotFoundError(String),
     IOError(String),
@@ -10,11 +11,14 @@ pub enum Error {
     DecoderError(String),
     DeserializeError(String),
     LoftyError(String),
+    ChannelSendError(String),
+    ChannelReceiveError(String),
 }
 
 impl std::string::ToString for Error {
     fn to_string(&self) -> String {
         match self {
+            Error::RuntimeError(err_str) => format!("RuntimeError: {}", err_str),
             Error::InvalidInputError(err_str) => format!("InvalidInputError: {}", err_str),
             Error::NotFoundError(err_str) => format!("NotFoundError: {}", err_str),
             Error::IOError(err_str) => format!("IOError: {}", err_str),
@@ -24,6 +28,8 @@ impl std::string::ToString for Error {
             Error::DecoderError(err_str) => format!("DecoderError: {}", err_str),
             Error::DeserializeError(err_str) => format!("DeserializeError: {}", err_str),
             Error::LoftyError(err_str) => format!("LoftyError: {}", err_str),
+            Error::ChannelSendError(err_str) => format!("ChannelSendError: {}", err_str),
+            Error::ChannelReceiveError(err_str) => format!("ChannelReceiveError: {}", err_str),
         }
     }
 }
@@ -56,5 +62,10 @@ impl From<bitcode::Error> for Error {
 impl From<lofty::error::LoftyError> for Error {
     fn from(value: lofty::error::LoftyError) -> Self {
         Error::LoftyError(value.to_string())
+    }
+}
+impl<T> From<tokio::sync::mpsc::error::SendError<T>> for Error {
+    fn from(value: tokio::sync::mpsc::error::SendError<T>) -> Self {
+        Error::ChannelSendError(value.to_string())
     }
 }

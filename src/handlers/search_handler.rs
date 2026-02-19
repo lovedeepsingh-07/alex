@@ -1,13 +1,13 @@
 use crate::{player, protocol, utils};
 use std::collections::HashSet;
 
-pub async fn handle(
-    player: &mut player::Player,
-    search_term: Option<String>,
-) -> protocol::Response {
+pub fn handle(player: &mut player::Player, search_term: Option<String>) -> protocol::Response {
     match search_term {
         Some(search_term) => {
-            log::debug!("Searching for audio files with term: {:#?}", search_term.as_str());
+            log::debug!(
+                "Searching for audio files with term: {:#?}",
+                search_term.as_str()
+            );
             let query_tokens =
                 utils::remove_stop_words(utils::tokenize_string(search_term.as_str()));
             let candidates = get_search_candidates(player, &query_tokens);
