@@ -1,58 +1,44 @@
-use crate::{error, services};
-use tokio::{
-    sync::{mpsc, watch},
-    task::JoinSet,
-};
+use tokio::io::AsyncWriteExt;
+use colored::Colorize;
+use crate::{error, player, protocol, handlers};
 
 pub async fn run(server_port: u16, folder_path: String) -> Result<(), error::Error> {
-    let mut tasks: JoinSet<services::TaskResult> = JoinSet::new();
-    let (shutdown_tx, shutdown_rx) = watch::channel(false);
-    let (request_carrier_tx, request_carrier_rx) = mpsc::channel(64);
+    let folder_path = std::path::Path::new(folder_path.as_str());
+    if !folder_path.exists() {
+        return Err(error::Error::InvalidInputError(
+            "Path provided to the daemon DOES_NOT exist".to_string(),
+        ));
+    }
+    let abs_folder_path = std::fs::canonicalize(folder_path)?;
+    if !abs_folder_path.is_dir() {
+        return Err(error::Error::InvalidInputError(
+            "Path provided to the daemon IS_NOT a valid folder".to_string(),
+        ));
+    }
+    let mut player = player::Player::new(abs_folder_path)?;
 
-    services::playback::spawn_task(services::playback::PlaybackProps {
-        tasks: &mut tasks,
-        shutdown_rx: shutdown_rx.clone(),
-        folder_path,
-        request_carrier_rx,
-    })
-    .await?;
-    services::server::spawn_task(services::server::ServerProps {
-        tasks: &mut tasks,
-        shutdown_rx: shutdown_rx.clone(),
-        server_port,
-        request_carrier_tx,
-    })
-    .await?;
+    let listener = tokio::net::TcpListener::bind(("127.0.0.1", server_port)).await?;
+    log::info!("daemon running on {}", format!(":{}", server_port).blue());
 
-    tokio::select! {
-        join_result = tasks.join_next() => {
-            if let Some(result) = join_result {
-                let _ = shutdown_tx.send(true);
-                handle_task_result(result);
+    loop {
+        tokio::select!{
+            conn = listener.accept() => {
+                let (mut tcp_stream, _) = conn?;
+                let request = protocol::Request::from_stream(&mut tcp_stream).await?;
+                let response = handlers::handle(request, &mut player);
+                tcp_stream.write_all(&response.to_bytes()).await?;
+                // NOTE: checkout the `main.rs` file for note regarding why this is here
+                tcp_stream.shutdown().await?;
             }
-        }
-        _ = tokio::signal::ctrl_c() => {
-            let _ = shutdown_tx.send(true);
-            log::info!("Shutting down...");
-            while let Some(result) = tasks.join_next().await {
-                handle_task_result(result);
+            _ = tokio::time::sleep(std::time::Duration::from_millis(100)) => {
+                player.update_state()?;
+                continue;
             }
-        }
+            _ = tokio::signal::ctrl_c() => {
+                log::info!("Shutting down...");
+                break;
+            }
+        };
     }
     Ok(())
-}
-
-fn handle_task_result(result: Result<services::TaskResult, tokio::task::JoinError>) {
-    match result {
-        Ok(services::TaskResult::Completed) => {
-            log::error!("Task returned unexpectedly");
-        }
-        Ok(services::TaskResult::Shutdown) => {
-            log::debug!("Shutting down Task");
-        }
-        Ok(services::TaskResult::Failed(e)) => {
-            log::error!("Task failed with error, {}", e.to_string());
-        }
-        Err(e) => log::error!("Join error: {}", e),
-    }
 }
