@@ -7,7 +7,7 @@ pub struct CliArgs {
     /// Server port
     pub port: u16,
     #[arg(long, global = true)]
-    /// Pass this argument when calling the "status" subcommands from another program
+    /// Pass this flag when calling the "status" subcommands from another program
     pub just_info: bool,
     #[command(subcommand)]
     pub sub_command: SubCommand,
@@ -28,6 +28,15 @@ pub enum SubCommand {
     Search { search_term: Option<String> },
     /// Play an audio [audio path (local) or slug (from daemon's index)]
     Play { input: String },
+    /// Push an audio to the playing queue [audio path (local) or slug (from daemon's index)]
+    Push {
+        input: String,
+        /// Pass this flag if you want the song to be pushed right after the currently playing song
+        #[arg(long)]
+        next: bool,
+    },
+    /// Skip to the next song in the playing queue
+    Next,
     /// Pause playback (does nothing if already paused)
     Pause,
     /// Resume playback (does nothing if already resumed)
@@ -85,6 +94,40 @@ pub fn generate_request(sub_command: &SubCommand) -> Result<protocol::Request, e
                     input,
                     is_path: false,
                 },
+            });
+        }
+        SubCommand::Push { input, next } => {
+            let input_path = std::path::Path::new(input);
+            if let Ok(path_exists) = std::fs::exists(input_path) {
+                if path_exists {
+                    let abs_path = std::fs::canonicalize(input_path)?;
+                    let input_path = abs_path.to_string_lossy().to_string();
+                    return Ok(protocol::Request::Player {
+                        sub_command: protocol::PlayerSubCommand::Push {
+                            input: input_path,
+                            is_path: true,
+                            next: next.clone(),
+                        },
+                    });
+                }
+            }
+            let input = input.trim().to_string();
+            if input.len() == 0 {
+                return Err(error::Error::InvalidInputError(
+                    "You must provide a input with the push command".to_string(),
+                ));
+            }
+            return Ok(protocol::Request::Player {
+                sub_command: protocol::PlayerSubCommand::Push {
+                    input,
+                    is_path: false,
+                    next: next.clone(),
+                },
+            });
+        }
+        SubCommand::Next => {
+            return Ok(protocol::Request::Player {
+                sub_command: protocol::PlayerSubCommand::Next,
             });
         }
         SubCommand::Pause => {

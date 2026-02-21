@@ -1,6 +1,6 @@
-use tokio::io::AsyncWriteExt;
+use crate::{constants, error, handlers, player, protocol};
 use colored::Colorize;
-use crate::{error, player, protocol, handlers};
+use tokio::io::AsyncWriteExt;
 
 pub async fn run(server_port: u16, folder_path: String) -> Result<(), error::Error> {
     let folder_path = std::path::Path::new(folder_path.as_str());
@@ -21,7 +21,7 @@ pub async fn run(server_port: u16, folder_path: String) -> Result<(), error::Err
     log::info!("daemon running on {}", format!(":{}", server_port).blue());
 
     loop {
-        tokio::select!{
+        tokio::select! {
             conn = listener.accept() => {
                 let (mut tcp_stream, _) = conn?;
                 let request = protocol::Request::from_stream(&mut tcp_stream).await?;
@@ -30,7 +30,7 @@ pub async fn run(server_port: u16, folder_path: String) -> Result<(), error::Err
                 // NOTE: checkout the `main.rs` file for note regarding why this is here
                 tcp_stream.shutdown().await?;
             }
-            _ = tokio::time::sleep(std::time::Duration::from_millis(100)) => {
+            _ = tokio::time::sleep(std::time::Duration::from_millis(constants::TIME_LAG_MS)) => {
                 player.update_state()?;
                 continue;
             }

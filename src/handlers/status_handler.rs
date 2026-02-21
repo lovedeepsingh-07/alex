@@ -5,5 +5,6 @@ pub fn handle(player: &mut player::Player) -> protocol::Response {
         current_audio: player.state.current_audio.clone(),
         is_paused: player.state.is_paused,
         is_queue_empty: player.state.is_queue_empty,
+        queue: player.state.queue.clone(),
     });
 }

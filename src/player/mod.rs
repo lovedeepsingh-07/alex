@@ -1,12 +1,16 @@
 pub mod indexer;
 
 use crate::error;
+use rand::seq::SliceRandom;
+use std::collections::VecDeque;
+use colored::Colorize;
 
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
 pub struct PlayerState {
     pub current_audio: Option<String>,
     pub is_paused: bool,
     pub is_queue_empty: bool,
+    pub queue: VecDeque<String>,
 }
 
 pub struct Player {
@@ -24,6 +28,7 @@ impl Player {
             current_audio: None,
             is_paused: false,
             is_queue_empty: true,
+            queue: VecDeque::new(),
         };
 
         let mut output = rodio::OutputStreamBuilder::open_default_stream()?;
@@ -40,9 +45,24 @@ impl Player {
         })
     }
     pub fn update_state(&mut self) -> Result<(), error::Error> {
-        self.state.is_queue_empty = self.sink.empty();
-        if self.state.is_queue_empty {
-            self.state.current_audio = None;
+        self.state.is_queue_empty = self.state.queue.is_empty();
+        match (self.sink.empty(), self.state.is_queue_empty) {
+            (true, true) => self.state.current_audio = None,
+            (true, false) => {
+                let next = self.state.queue.pop_front().ok_or_else(|| {
+                    error::Error::PlayerError(
+                        "Failed to get the next song from the playing queue".to_string(),
+                    )
+                })?;
+                self.play(next.as_str(), false)?;
+                log::debug!(
+                    "Playing {quote}{}{quote}",
+                    next.purple(),
+                    quote = "\"".purple()
+                );
+                self.state.current_audio = Some(next);
+            }
+            _ => {}
         }
         Ok(())
     }
@@ -50,7 +70,6 @@ impl Player {
         if is_path {
             let audio_file = std::fs::File::open(input)?;
             let audio_source = rodio::Decoder::builder().with_data(audio_file).build()?;
-
             self.clear();
             self.sink.append(audio_source);
             self.resume();
@@ -67,8 +86,43 @@ impl Player {
 
         self.clear();
         self.sink.append(audio_source);
+        self.state.queue.push_back(input.to_string());
         self.resume();
         self.state.current_audio = Some(input.to_string());
+
+        let mut slugs: Vec<String> = self
+            .storage
+            .audios
+            .iter()
+            .filter_map(|(item, _)| {
+                if item == input {
+                    None
+                } else {
+                    Some(item.to_string())
+                }
+            })
+            .collect();
+        slugs.shuffle(&mut rand::rng());
+        self.state.queue = slugs.into();
+
+        Ok(())
+    }
+    pub fn next(&mut self) -> Result<(), error::Error> {
+        if self.state.is_queue_empty {
+            return Ok(())
+        }
+        let next = self.state.queue.pop_front().ok_or_else(|| {
+            error::Error::PlayerError(
+                "Failed to get the next song from the playing queue".to_string(),
+            )
+        })?;
+        self.play(next.as_str(), false)?;
+        self.state.current_audio = Some(next.clone());
+        log::debug!(
+            "Playing {quote}{}{quote}",
+            next.purple(),
+            quote = "\"".purple()
+        );
         Ok(())
     }
     pub fn resume(&mut self) {
@@ -89,6 +143,7 @@ impl Player {
         if self.state.is_queue_empty {
             return;
         }
+        self.state.queue.clear();
         self.state.is_queue_empty = true;
         self.sink.stop();
     }

@@ -80,6 +80,9 @@ async fn handle_response(
         protocol::Response::PlaybackStarted { input } => {
             println!("> Playing {}", input.purple());
         }
+        protocol::Response::Next { playing_audio } => {
+            println!("> Playing {}", playing_audio.purple());
+        }
         protocol::Response::Paused => {
             println!("> Pausing playback")
         }

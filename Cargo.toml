@@ -10,6 +10,7 @@ colored = "3.0.0"
 env_logger = "0.11.8"
 lofty = "0.23.1"
 log = "0.4.29"
+rand = "0.10.0"
 rodio = { version = "0.21.1", default-features = false, features = [
   "playback",
   "symphonia-all",
