@@ -16,7 +16,7 @@ pub struct CliArgs {
 #[derive(Debug, clap::Subcommand, PartialEq)]
 pub enum SubCommand {
     /// Start the daemon by providing the path to your songs folder
-    Daemon { folder_path: String },
+    Daemon { root_folder_path: String },
     /// Get information such as which song is playing, whether playback is paused or not etc
     Status {
         #[command(subcommand)]
@@ -26,9 +26,9 @@ pub enum SubCommand {
     Reload,
     /// Search through the audio index
     Search { search_term: Option<String> },
-    /// Play an audio [audio path (local) or slug (from daemon's index)]
+    /// Play an audio [audio path (local) or id (from daemon's index)]
     Play { input: String },
-    /// Push an audio to the playing queue [audio path (local) or slug (from daemon's index)]
+    /// Push an audio to the playing queue [audio path (local) or id (from daemon's index)]
     Push {
         input: String,
         /// Pass this flag if you want the song to be pushed right after the currently playing song
@@ -57,7 +57,7 @@ pub enum StatusSubCommand {
 
 pub fn generate_request(sub_command: &SubCommand) -> Result<protocol::Request, error::Error> {
     match sub_command {
-        SubCommand::Daemon { folder_path: _ } => {}
+        SubCommand::Daemon { root_folder_path: _ } => {}
         SubCommand::Status { sub_command: _ } => {
             return Ok(protocol::Request::Status);
         }
@@ -77,8 +77,10 @@ pub fn generate_request(sub_command: &SubCommand) -> Result<protocol::Request, e
                     let input_path = abs_path.to_string_lossy().to_string();
                     return Ok(protocol::Request::Player {
                         sub_command: protocol::PlayerSubCommand::Play {
-                            input: input_path,
-                            is_path: true,
+                            input: protocol::AudioInput {
+                                id: input_path,
+                                is_path: true,
+                            },
                         },
                     });
                 }
@@ -91,8 +93,10 @@ pub fn generate_request(sub_command: &SubCommand) -> Result<protocol::Request, e
             }
             return Ok(protocol::Request::Player {
                 sub_command: protocol::PlayerSubCommand::Play {
-                    input,
-                    is_path: false,
+                    input: protocol::AudioInput {
+                        id: input,
+                        is_path: false,
+                    }
                 },
             });
         }
@@ -104,8 +108,10 @@ pub fn generate_request(sub_command: &SubCommand) -> Result<protocol::Request, e
                     let input_path = abs_path.to_string_lossy().to_string();
                     return Ok(protocol::Request::Player {
                         sub_command: protocol::PlayerSubCommand::Push {
-                            input: input_path,
-                            is_path: true,
+                            input: protocol::AudioInput {
+                                id: input_path,
+                                is_path: true,
+                            },
                             next: next.clone(),
                         },
                     });
@@ -119,8 +125,10 @@ pub fn generate_request(sub_command: &SubCommand) -> Result<protocol::Request, e
             }
             return Ok(protocol::Request::Player {
                 sub_command: protocol::PlayerSubCommand::Push {
-                    input,
-                    is_path: false,
+                    input: protocol::AudioInput {
+                        id: input,
+                        is_path: false,
+                    },
                     next: next.clone(),
                 },
             });

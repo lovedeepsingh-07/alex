@@ -1,154 +1,91 @@
-pub mod indexer;
+#![allow(unused_imports, dead_code)]
+pub mod storage;
+pub use storage::Storage;
+pub use storage::Audio;
+pub use storage::AudioID;
 
-use crate::error;
-use rand::seq::SliceRandom;
+use crate::{error, protocol};
 use std::collections::VecDeque;
-use colored::Colorize;
-
-#[derive(Debug, serde::Serialize, serde::Deserialize)]
-pub struct PlayerState {
-    pub current_audio: Option<String>,
-    pub is_paused: bool,
-    pub is_queue_empty: bool,
-    pub queue: VecDeque<String>,
-}
+// use rand::seq::SliceRandom;
+// use colored::Colorize;
 
 pub struct Player {
-    folder_path: std::path::PathBuf,
-    pub state: PlayerState,
-    #[allow(dead_code)]
-    output: rodio::OutputStream,
+    root_folder_path: std::path::PathBuf,
+    output_stream: rodio::OutputStream,
     sink: rodio::Sink,
-    pub storage: indexer::Storage,
+    pub storage: Storage,
+    pub queue: VecDeque<String>,
+    current_audio: Option<AudioID>,
+}
+impl std::fmt::Debug for Player {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Player")
+         .field("root_folder_path", &self.root_folder_path)
+         .field("output_stream", &"OutputStream")
+         .field("sink", &"Sink")
+         .field("storage", &self.storage)
+         .finish()
+    }
 }
 
 impl Player {
-    pub fn new(folder_path: std::path::PathBuf) -> Result<Self, error::Error> {
-        let state = PlayerState {
-            current_audio: None,
-            is_paused: false,
-            is_queue_empty: true,
-            queue: VecDeque::new(),
-        };
+    pub fn new(root_folder_path: std::path::PathBuf) -> Result<Self, error::Error> {
+        let mut output_stream = rodio::OutputStreamBuilder::open_default_stream()?;
+        output_stream.log_on_drop(false);
+        let sink = rodio::Sink::connect_new(&output_stream.mixer());
+        let storage = Storage::generate(&root_folder_path)?;
+        let queue: VecDeque<String> = VecDeque::new();
 
-        let mut output = rodio::OutputStreamBuilder::open_default_stream()?;
-        output.log_on_drop(false);
-        let sink = rodio::Sink::connect_new(&output.mixer());
-        let storage = indexer::index_audio_files(&folder_path)?;
-
-        Ok(Player {
-            folder_path,
-            output,
+        Ok(Self {
+            root_folder_path,
+            output_stream,
             sink,
             storage,
-            state,
+            queue,
+            current_audio: None
         })
     }
-    pub fn update_state(&mut self) -> Result<(), error::Error> {
-        self.state.is_queue_empty = self.state.queue.is_empty();
-        match (self.sink.empty(), self.state.is_queue_empty) {
-            (true, true) => self.state.current_audio = None,
-            (true, false) => {
-                let next = self.state.queue.pop_front().ok_or_else(|| {
-                    error::Error::PlayerError(
-                        "Failed to get the next song from the playing queue".to_string(),
-                    )
-                })?;
-                self.play(next.as_str(), false)?;
-                log::debug!(
-                    "Playing {quote}{}{quote}",
-                    next.purple(),
-                    quote = "\"".purple()
-                );
-                self.state.current_audio = Some(next);
-            }
-            _ => {}
-        }
+
+    pub fn get_current_audio(&self) -> &Option<AudioID> {
+        &self.current_audio
+    }
+    pub fn is_paused(&self) -> bool {
+        self.sink.is_paused()
+    }
+    pub fn is_queue_empty(&self) -> bool {
+        self.queue.is_empty()
+    }
+
+    pub fn tick(&self) -> Result<(), error::Error> {
         Ok(())
     }
-    pub fn play(&mut self, input: &str, is_path: bool) -> Result<(), error::Error> {
-        if is_path {
-            let audio_file = std::fs::File::open(input)?;
-            let audio_source = rodio::Decoder::builder().with_data(audio_file).build()?;
-            self.clear();
-            self.sink.append(audio_source);
-            self.resume();
-            self.state.current_audio = Some(input.to_string());
-            return Ok(());
-        }
-        let audio = self.storage.audios.get(input).ok_or_else(|| {
-            error::Error::NotFoundError("The requested audio file does not exist".to_string())
-        })?;
-
-        let audio_path = audio.path.clone();
-        let audio_file = std::fs::File::open(&audio_path)?;
-        let audio_source = rodio::Decoder::builder().with_data(audio_file).build()?;
-
-        self.clear();
-        self.sink.append(audio_source);
-        self.state.queue.push_back(input.to_string());
-        self.resume();
-        self.state.current_audio = Some(input.to_string());
-
-        let mut slugs: Vec<String> = self
-            .storage
-            .audios
-            .iter()
-            .filter_map(|(item, _)| {
-                if item == input {
-                    None
-                } else {
-                    Some(item.to_string())
-                }
-            })
-            .collect();
-        slugs.shuffle(&mut rand::rng());
-        self.state.queue = slugs.into();
-
+    pub fn play(&self, input: &protocol::AudioInput) -> Result<(), error::Error> {
+        let _ = input;
         Ok(())
     }
-    pub fn next(&mut self) -> Result<(), error::Error> {
-        if self.state.is_queue_empty {
-            return Ok(())
-        }
-        let next = self.state.queue.pop_front().ok_or_else(|| {
-            error::Error::PlayerError(
-                "Failed to get the next song from the playing queue".to_string(),
-            )
-        })?;
-        self.play(next.as_str(), false)?;
-        self.state.current_audio = Some(next.clone());
-        log::debug!(
-            "Playing {quote}{}{quote}",
-            next.purple(),
-            quote = "\"".purple()
-        );
+    pub fn push(&self, input: &protocol::AudioInput, next: bool) -> Result<(), error::Error> {
+        let _ = input;
+        let _ = next;
         Ok(())
     }
-    pub fn resume(&mut self) {
-        if !self.state.is_paused {
-            return;
-        }
-        self.state.is_paused = false;
-        self.sink.play();
-    }
-    pub fn pause(&mut self) {
-        if self.state.is_paused {
-            return;
-        }
-        self.state.is_paused = true;
+    pub fn pause(&mut self) -> Result<(), error::Error> {
         self.sink.pause();
+        Ok(())
     }
-    pub fn clear(&mut self) {
-        if self.state.is_queue_empty {
-            return;
-        }
-        self.state.queue.clear();
-        self.state.is_queue_empty = true;
-        self.sink.stop();
+    pub fn resume(&mut self) -> Result<(), error::Error> {
+        self.sink.play();
+        Ok(())
     }
-    pub fn reload(&mut self) -> Result<(), error::Error> {
-        self.storage = indexer::index_audio_files(&self.folder_path)?;
+    pub fn next(&self) -> Result<(), error::Error> {
+        Ok(())
+    }
+    pub fn clear_queue(&mut self) -> Result<(), error::Error> {
+        self.queue.clear();
+        self.sink.clear();
+        Ok(())
+    }
+    pub fn reload_storage(&mut self) -> Result<(), error::Error> {
+        self.storage = Storage::generate(&self.root_folder_path)?;
         Ok(())
     }
 }

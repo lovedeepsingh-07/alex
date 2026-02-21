@@ -1,21 +1,21 @@
-use crate::{constants, error, handlers, player, protocol};
+use crate::{constants, error, protocol};
 use colored::Colorize;
 use tokio::io::AsyncWriteExt;
 
-pub async fn run(server_port: u16, folder_path: String) -> Result<(), error::Error> {
-    let folder_path = std::path::Path::new(folder_path.as_str());
-    if !folder_path.exists() {
+pub async fn run(server_port: u16, root_folder_path: String) -> Result<(), error::Error> {
+    let root_folder_path = std::path::Path::new(root_folder_path.as_str());
+    if !root_folder_path.exists() {
         return Err(error::Error::InvalidInputError(
             "Path provided to the daemon DOES_NOT exist".to_string(),
         ));
     }
-    let abs_folder_path = std::fs::canonicalize(folder_path)?;
-    if !abs_folder_path.is_dir() {
+    let root_folder_path = std::fs::canonicalize(root_folder_path)?;
+    if !root_folder_path.is_dir() {
         return Err(error::Error::InvalidInputError(
             "Path provided to the daemon IS_NOT a valid folder".to_string(),
         ));
     }
-    let mut player = player::Player::new(abs_folder_path)?;
+    // let mut player = player::Player::new(root_folder_path)?;
 
     let listener = tokio::net::TcpListener::bind(("127.0.0.1", server_port)).await?;
     log::info!("daemon running on {}", format!(":{}", server_port).blue());
@@ -25,13 +25,14 @@ pub async fn run(server_port: u16, folder_path: String) -> Result<(), error::Err
             conn = listener.accept() => {
                 let (mut tcp_stream, _) = conn?;
                 let request = protocol::Request::from_stream(&mut tcp_stream).await?;
-                let response = handlers::handle(request, &mut player);
-                tcp_stream.write_all(&response.to_bytes()).await?;
+                log::info!("{:#?}", request);
+                // let response = handlers::handle(request, &mut player);
+                // tcp_stream.write_all(&response.to_bytes()).await?;
                 // NOTE: checkout the `main.rs` file for note regarding why this is here
                 tcp_stream.shutdown().await?;
             }
             _ = tokio::time::sleep(std::time::Duration::from_millis(constants::TIME_LAG_MS)) => {
-                player.update_state()?;
+                // player.update_state()?;
                 continue;
             }
             _ = tokio::signal::ctrl_c() => {

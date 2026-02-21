@@ -1,25 +1,25 @@
-use crate::error;
+use crate::{error, player};
 use std::collections::VecDeque;
 use tokio::io::AsyncReadExt;
 
 #[derive(Debug, bitcode::Encode, bitcode::Decode, serde::Serialize, serde::Deserialize)]
 pub struct StatusData {
-    pub current_audio: Option<String>,
+    pub current_audio: Option<player::AudioID>,
     pub is_paused: bool,
     pub is_queue_empty: bool,
-    pub queue: VecDeque<String>,
+    pub queue: VecDeque<player::AudioID>,
 }
 
 #[derive(Debug, bitcode::Encode, bitcode::Decode)]
 pub struct SearchResult {
-    pub slug: String,
+    pub id: player::AudioID,
     pub score: f64,
 }
 
 #[derive(Debug, bitcode::Encode, bitcode::Decode)]
 pub enum Response {
-    PlaybackStarted { input: String },
-    Next { playing_audio: String },
+    PlaybackStarted { id: player::AudioID },
+    Next { playing_audio: player::AudioID },
     Paused,
     Resumed,
     Cleared,
