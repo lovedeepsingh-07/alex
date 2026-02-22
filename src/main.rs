@@ -13,8 +13,8 @@ async fn main() {
 
     let cli_args = cli::CliArgs::parse();
 
-    if let cli::SubCommand::Daemon { folder_path } = cli_args.sub_command {
-        match daemon::run(cli_args.port, folder_path).await {
+    if let cli::SubCommand::Daemon { root_folder_path } = cli_args.sub_command {
+        match daemon::run(cli_args.port, root_folder_path).await {
             Ok(_) => {}
             Err(e) => {
                 log::error!("Failed to run daemon, {}", e.to_string());
@@ -77,8 +77,11 @@ async fn handle_response(
     response: protocol::Response,
 ) -> Result<(), error::Error> {
     match response {
-        protocol::Response::PlaybackStarted { input } => {
-            println!("> Playing {}", input.purple());
+        protocol::Response::PlaybackStarted { id } => {
+            println!("> Playing {}", id.purple());
+        }
+        protocol::Response::Next { playing_audio } => {
+            println!("> Playing {}", playing_audio.purple());
         }
         protocol::Response::Paused => {
             println!("> Pausing playback")
@@ -95,7 +98,7 @@ async fn handle_response(
         protocol::Response::SearchResults(search_results) => {
             let mut search_results_iter = search_results.iter();
             while let Some(item) = search_results_iter.next() {
-                println!("-> {}", item.slug);
+                println!("-> {}", item.id);
             }
         }
         protocol::Response::StatusData(status_data) => {
@@ -133,9 +136,13 @@ fn handle_status_response(
                 true => print!("{}", status_data.is_queue_empty),
                 false => println!("> {}", status_data.is_queue_empty),
             },
+            Some(cli::StatusSubCommand::Queue) => match cli_args.just_info {
+                true => print!("{:?}", status_data.queue),
+                false => println!("> {:#?}", status_data.queue),
+            }
             None => match cli_args.just_info {
                 true => print!("{}", serde_json::to_string(&status_data)?),
-                false => println!("> {}", serde_json::to_string(&status_data)?),
+                false => println!("> {:#?}", status_data),
             },
         }
     } else {

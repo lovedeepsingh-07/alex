@@ -1,7 +1,6 @@
 #[allow(dead_code)]
 #[derive(Debug, PartialEq)]
 pub enum Error {
-    RuntimeError(String),
     InvalidInputError(String),
     NotFoundError(String),
     IOError(String),
@@ -13,12 +12,12 @@ pub enum Error {
     LoftyError(String),
     ChannelSendError(String),
     ChannelReceiveError(String),
+    PlayerError(String),
 }
 
 impl std::string::ToString for Error {
     fn to_string(&self) -> String {
         match self {
-            Error::RuntimeError(err_str) => format!("RuntimeError: {}", err_str),
             Error::InvalidInputError(err_str) => format!("InvalidInputError: {}", err_str),
             Error::NotFoundError(err_str) => format!("NotFoundError: {}", err_str),
             Error::IOError(err_str) => format!("IOError: {}", err_str),
@@ -30,6 +29,7 @@ impl std::string::ToString for Error {
             Error::LoftyError(err_str) => format!("LoftyError: {}", err_str),
             Error::ChannelSendError(err_str) => format!("ChannelSendError: {}", err_str),
             Error::ChannelReceiveError(err_str) => format!("ChannelReceiveError: {}", err_str),
+            Error::PlayerError(err_str) => format!("PlayerError: {}", err_str),
         }
     }
 }

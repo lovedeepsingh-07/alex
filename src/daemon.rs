@@ -1,27 +1,27 @@
-use tokio::io::AsyncWriteExt;
+use crate::{constants, error, protocol, handlers, player};
 use colored::Colorize;
-use crate::{error, player, protocol, handlers};
+use tokio::io::AsyncWriteExt;
 
-pub async fn run(server_port: u16, folder_path: String) -> Result<(), error::Error> {
-    let folder_path = std::path::Path::new(folder_path.as_str());
-    if !folder_path.exists() {
+pub async fn run(server_port: u16, root_folder_path: String) -> Result<(), error::Error> {
+    let root_folder_path = std::path::Path::new(root_folder_path.as_str());
+    if !root_folder_path.exists() {
         return Err(error::Error::InvalidInputError(
             "Path provided to the daemon DOES_NOT exist".to_string(),
         ));
     }
-    let abs_folder_path = std::fs::canonicalize(folder_path)?;
-    if !abs_folder_path.is_dir() {
+    let root_folder_path = std::fs::canonicalize(root_folder_path)?;
+    if !root_folder_path.is_dir() {
         return Err(error::Error::InvalidInputError(
             "Path provided to the daemon IS_NOT a valid folder".to_string(),
         ));
     }
-    let mut player = player::Player::new(abs_folder_path)?;
+    let mut player = player::Player::new(root_folder_path)?;
 
     let listener = tokio::net::TcpListener::bind(("127.0.0.1", server_port)).await?;
     log::info!("daemon running on {}", format!(":{}", server_port).blue());
 
     loop {
-        tokio::select!{
+        tokio::select! {
             conn = listener.accept() => {
                 let (mut tcp_stream, _) = conn?;
                 let request = protocol::Request::from_stream(&mut tcp_stream).await?;
@@ -30,8 +30,15 @@ pub async fn run(server_port: u16, folder_path: String) -> Result<(), error::Err
                 // NOTE: checkout the `main.rs` file for note regarding why this is here
                 tcp_stream.shutdown().await?;
             }
-            _ = tokio::time::sleep(std::time::Duration::from_millis(100)) => {
-                player.update_state()?;
+            _ = tokio::time::sleep(std::time::Duration::from_millis(constants::DELTA_TIME_MS)) => {
+                player.tick(|next_audio_title| {
+                    log::debug!(
+                        "Playing {quote}{}{quote}",
+                        next_audio_title.purple(),
+                        quote = "\"".purple()
+                    );
+                    Ok(())
+                })?;
                 continue;
             }
             _ = tokio::signal::ctrl_c() => {

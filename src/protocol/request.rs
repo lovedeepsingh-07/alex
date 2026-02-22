@@ -1,9 +1,10 @@
-use crate::error;
+use crate::{error, player};
 use tokio::io::AsyncReadExt;
 
 #[derive(Debug, bitcode::Encode, bitcode::Decode)]
 pub enum PlayerSubCommand {
-    Play { input: String, is_path: bool },
+    Play { id: player::AudioID },
+    Next,
     Pause,
     Resume,
     Clear,
