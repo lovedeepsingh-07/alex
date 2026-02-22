@@ -20,7 +20,7 @@ pub struct Player {
     root_folder_path: std::path::PathBuf,
     engine: Engine,
     pub storage: Storage,
-    pub queue: VecDeque<String>,
+    queue: VecDeque<String>,
     current_audio: Option<AudioID>,
 }
 
@@ -40,6 +40,9 @@ impl Player {
     }
     pub fn get_current_audio(&self) -> &Option<AudioID> {
         &self.current_audio
+    }
+    pub fn get_queue(&self) -> &VecDeque<AudioID> {
+        &self.queue
     }
     pub fn is_paused(&self) -> bool {
         self.engine.is_paused()
@@ -87,7 +90,17 @@ impl Player {
     pub fn resume(&mut self) {
         self.engine.resume();
     }
-    pub fn next(&self) -> Result<(), error::Error> {
+    pub fn next(&mut self) -> Result<(), error::Error> {
+        if self.queue.is_empty() {
+            return Ok(())
+        }
+        let next_audio_id = self.queue.pop_front().ok_or_else(|| {
+            error::Error::PlayerError(
+                "Failed to get the next song from the playing queue".to_string(),
+            )
+        })?;
+        let next_audio = self.storage.get_audio(&next_audio_id)?.clone();
+        self.play(&next_audio)?;
         Ok(())
     }
     pub fn clear_sink(&mut self) {

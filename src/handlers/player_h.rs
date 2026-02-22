@@ -6,16 +6,36 @@ pub fn handle(
     sub_command: protocol::PlayerSubCommand,
 ) -> protocol::Response {
     match sub_command {
-        protocol::PlayerSubCommand::Play { input, is_path } => {
-            match player.play(&input, is_path) {
+        protocol::PlayerSubCommand::Play { id } => {
+            let audio = match player.storage.get_audio(&id) {
+                Ok(out) => out,
+                Err(e) => {
+                    log::error!("Failed to get audio from the storage, {}", e.to_string());
+                    return protocol::Response::ERROR {
+                        message: "Failed to get audio with the corresponding ID from the storage".to_string()
+                    };
+                },
+            }.clone();
+            match player.play(&audio) {
                 Ok(_) => {
                     log::debug!(
                         "Playing {quote}{}{quote}",
-                        input.purple(),
+                        audio.get_title().purple(),
                         quote = "\"".purple()
                     );
+                    if player.is_queue_empty() {
+                        match player.populate_queue() {
+                            Ok(_) => {},
+                            Err(e) => {
+                                log::error!("Failed to populate the queue, {}", e.to_string());
+                                return protocol::Response::ERROR {
+                                    message: "Failed to populate the queue".to_string()
+                                };
+                            }
+                        }
+                    }
                     return protocol::Response::PlaybackStarted {
-                        input: input.to_string(),
+                        id: id.to_string(),
                     };
                 }
                 Err(e) => {
@@ -29,8 +49,8 @@ pub fn handle(
         protocol::PlayerSubCommand::Next => {
             match player.next() {
                 Ok(_) => {
-                    let playing_audio = match player.state.current_audio{
-                        Some(ref out) => out,
+                    let playing_audio = match player.get_current_audio() {
+                        Some(out) => out,
                         None => {
                             log::error!("Failed to get the currently playing audio");
                             return protocol::Response::ERROR {
@@ -53,19 +73,6 @@ pub fn handle(
                 },
             };
         }
-        protocol::PlayerSubCommand::Push {
-            input,
-            is_path,
-            next,
-        } => {
-            log::info!("{} {} {}", input, is_path, next);
-            let _ = input;
-            let _ = is_path;
-            let _ = next;
-            return protocol::Response::ERROR {
-                message: String::from("PUSH not implemented!"),
-            };
-        }
         protocol::PlayerSubCommand::Pause => {
             log::debug!("Pausing playback");
             player.pause();
@@ -78,7 +85,7 @@ pub fn handle(
         }
         protocol::PlayerSubCommand::Clear => {
             log::debug!("Clearing player queue");
-            player.clear();
+            player.clear_queue();
             return protocol::Response::Cleared;
         }
     }

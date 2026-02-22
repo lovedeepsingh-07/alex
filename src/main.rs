@@ -136,6 +136,10 @@ fn handle_status_response(
                 true => print!("{}", status_data.is_queue_empty),
                 false => println!("> {}", status_data.is_queue_empty),
             },
+            Some(cli::StatusSubCommand::Queue) => match cli_args.just_info {
+                true => print!("{:?}", status_data.queue),
+                false => println!("> {:#?}", status_data.queue),
+            }
             None => match cli_args.just_info {
                 true => print!("{}", serde_json::to_string(&status_data)?),
                 false => println!("> {:#?}", status_data),

@@ -46,6 +46,8 @@ pub enum StatusSubCommand {
     IsPaused,
     /// Is the playing queue empty ?
     IsQueueEmpty,
+    /// Queue
+    Queue
 }
 
 pub fn generate_request(sub_command: &SubCommand) -> Result<protocol::Request, error::Error> {

@@ -1,5 +1,4 @@
 use crate::{player, protocol, utils};
-use std::collections::HashSet;
 
 pub fn handle(player: &mut player::Player, search_term: Option<String>) -> protocol::Response {
     match search_term {
@@ -32,7 +31,7 @@ pub fn handle(player: &mut player::Player, search_term: Option<String>) -> proto
         None => {
             log::debug!("Searching for audio files");
             let mut results: Vec<protocol::SearchResult> = Vec::new();
-            for (id, _) in &player.storage.audios {
+            for (id, _) in player.storage.get_audio_map() {
                 results.push(protocol::SearchResult {
                     id: id.clone(),
                     score: 0.0,
