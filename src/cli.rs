@@ -26,15 +26,8 @@ pub enum SubCommand {
     Reload,
     /// Search through the audio index
     Search { search_term: Option<String> },
-    /// Play an audio [audio path (local) or id (from daemon's index)]
+    /// Play an audio
     Play { input: String },
-    /// Push an audio to the playing queue [audio path (local) or id (from daemon's index)]
-    Push {
-        input: String,
-        /// Pass this flag if you want the song to be pushed right after the currently playing song
-        #[arg(long)]
-        next: bool,
-    },
     /// Skip to the next song in the playing queue
     Next,
     /// Pause playback (does nothing if already paused)
@@ -57,7 +50,9 @@ pub enum StatusSubCommand {
 
 pub fn generate_request(sub_command: &SubCommand) -> Result<protocol::Request, error::Error> {
     match sub_command {
-        SubCommand::Daemon { root_folder_path: _ } => {}
+        SubCommand::Daemon {
+            root_folder_path: _,
+        } => {}
         SubCommand::Status { sub_command: _ } => {
             return Ok(protocol::Request::Status);
         }
@@ -70,67 +65,14 @@ pub fn generate_request(sub_command: &SubCommand) -> Result<protocol::Request, e
             });
         }
         SubCommand::Play { input } => {
-            let input_path = std::path::Path::new(input);
-            if let Ok(path_exists) = std::fs::exists(input_path) {
-                if path_exists {
-                    let abs_path = std::fs::canonicalize(input_path)?;
-                    let input_path = abs_path.to_string_lossy().to_string();
-                    return Ok(protocol::Request::Player {
-                        sub_command: protocol::PlayerSubCommand::Play {
-                            input: protocol::AudioInput {
-                                id: input_path,
-                                is_path: true,
-                            },
-                        },
-                    });
-                }
-            }
-            let input = input.trim().to_string();
-            if input.len() == 0 {
+            let id = input.trim().to_string();
+            if id.len() == 0 {
                 return Err(error::Error::InvalidInputError(
-                    "You must provide a input with the play command".to_string(),
+                    "You must provide an input with the play command".to_string(),
                 ));
             }
             return Ok(protocol::Request::Player {
-                sub_command: protocol::PlayerSubCommand::Play {
-                    input: protocol::AudioInput {
-                        id: input,
-                        is_path: false,
-                    }
-                },
-            });
-        }
-        SubCommand::Push { input, next } => {
-            let input_path = std::path::Path::new(input);
-            if let Ok(path_exists) = std::fs::exists(input_path) {
-                if path_exists {
-                    let abs_path = std::fs::canonicalize(input_path)?;
-                    let input_path = abs_path.to_string_lossy().to_string();
-                    return Ok(protocol::Request::Player {
-                        sub_command: protocol::PlayerSubCommand::Push {
-                            input: protocol::AudioInput {
-                                id: input_path,
-                                is_path: true,
-                            },
-                            next: next.clone(),
-                        },
-                    });
-                }
-            }
-            let input = input.trim().to_string();
-            if input.len() == 0 {
-                return Err(error::Error::InvalidInputError(
-                    "You must provide a input with the push command".to_string(),
-                ));
-            }
-            return Ok(protocol::Request::Player {
-                sub_command: protocol::PlayerSubCommand::Push {
-                    input: protocol::AudioInput {
-                        id: input,
-                        is_path: false,
-                    },
-                    next: next.clone(),
-                },
+                sub_command: protocol::PlayerSubCommand::Play { id },
             });
         }
         SubCommand::Next => {

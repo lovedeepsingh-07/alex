@@ -4,7 +4,7 @@ use std::collections::{HashMap, HashSet};
 
 pub type AudioID = String;
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone)]
 pub struct Audio {
     id: AudioID,
     name_without_ext: String,
@@ -16,14 +16,20 @@ impl Audio {
     pub fn searchable_fields(&self) -> Vec<(&AudioID, f64)> {
         vec![(&self.id, 1.0)]
     }
-    pub fn get_duration(&self) -> std::time::Duration {
-        self.duration
-    }
     pub fn get_id(&self) -> &AudioID {
-        return &self.id
+        return &self.id;
+    }
+    pub fn get_title(&self) -> &str {
+        return &self.name_without_ext;
     }
     pub fn get_extension(&self) -> &str {
-        return &self.extension
+        return &self.extension;
+    }
+    pub fn get_path(&self) -> &std::path::PathBuf {
+        return &self.path;
+    }
+    pub fn get_duration(&self) -> std::time::Duration {
+        self.duration
     }
 }
 
@@ -33,8 +39,16 @@ pub struct Storage {
     index: HashMap<String, HashSet<AudioID>>,
 }
 impl Storage {
-    pub fn audios(&self) -> &HashMap<AudioID, Audio> {
+    pub fn get_audio_map(&mut self) -> &HashMap<AudioID, Audio> {
         return &self.audios;
+    }
+    pub fn get_audio(&self, id: &AudioID) -> Result<&Audio, error::Error> {
+        let audio = self.audios.get(id).ok_or_else(|| {
+            error::Error::NotFoundError(
+                "The requested audio does not exist in the storage".to_string(),
+            )
+        })?;
+        return Ok(audio);
     }
     pub fn get_search_candidates(&self, query_tokens: &[String]) -> HashSet<AudioID> {
         let mut candidates: HashSet<AudioID> = HashSet::new();
@@ -132,15 +146,16 @@ impl Storage {
         }
 
         // conversion into usable data
-        let file_name_without_ext = match file_name_with_ext.strip_suffix(&format!(".{}", extension)) {
-            Some(out) => out,
-            None => {
-                return Err(error::Error::FSError(format!(
-                    "Invalid file name, {}",
-                    file_name_with_ext
-                )));
-            }
-        };
+        let file_name_without_ext =
+            match file_name_with_ext.strip_suffix(&format!(".{}", extension)) {
+                Some(out) => out,
+                None => {
+                    return Err(error::Error::FSError(format!(
+                        "Invalid file name, {}",
+                        file_name_with_ext
+                    )));
+                }
+            };
 
         // audio metadata
         let tagged_file = lofty::read_from_path(entry_path)?;

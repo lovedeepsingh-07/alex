@@ -2,18 +2,8 @@ use crate::{error, player};
 use tokio::io::AsyncReadExt;
 
 #[derive(Debug, bitcode::Encode, bitcode::Decode)]
-pub struct AudioInput {
-    pub id: player::AudioID,
-    pub is_path: bool,
-}
-
-#[derive(Debug, bitcode::Encode, bitcode::Decode)]
 pub enum PlayerSubCommand {
-    Play { input: AudioInput },
-    Push {
-        input: AudioInput,
-        next: bool,
-    },
+    Play { id: player::AudioID },
     Next,
     Pause,
     Resume,

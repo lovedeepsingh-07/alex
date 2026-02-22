@@ -31,8 +31,8 @@ pub async fn run(server_port: u16, root_folder_path: String) -> Result<(), error
                 // NOTE: checkout the `main.rs` file for note regarding why this is here
                 tcp_stream.shutdown().await?;
             }
-            _ = tokio::time::sleep(std::time::Duration::from_millis(constants::TIME_LAG_MS)) => {
-                // player.update_state()?;
+            _ = tokio::time::sleep(std::time::Duration::from_millis(constants::DELTA_TIME_MS)) => {
+                // player.tick(|next_audio_title| {})?;
                 continue;
             }
             _ = tokio::signal::ctrl_c() => {
