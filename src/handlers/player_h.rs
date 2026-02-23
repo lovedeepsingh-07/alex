@@ -12,10 +12,12 @@ pub fn handle(
                 Err(e) => {
                     log::error!("Failed to get audio from the storage, {}", e.to_string());
                     return protocol::Response::ERROR {
-                        message: "Failed to get audio with the corresponding ID from the storage".to_string()
+                        message: "Failed to get audio with the corresponding ID from the storage"
+                            .to_string(),
                     };
-                },
-            }.clone();
+                }
+            }
+            .clone();
             match player.play(&audio) {
                 Ok(_) => {
                     log::debug!(
@@ -25,17 +27,17 @@ pub fn handle(
                     );
                     if player.is_queue_empty() {
                         match player.populate_queue() {
-                            Ok(_) => {},
+                            Ok(_) => {}
                             Err(e) => {
                                 log::error!("Failed to populate the queue, {}", e.to_string());
                                 return protocol::Response::ERROR {
-                                    message: "Failed to populate the queue".to_string()
+                                    message: "Failed to populate the queue".to_string(),
                                 };
                             }
                         }
                     }
                     return protocol::Response::PlaybackStarted {
-                        id: id.to_string(),
+                        title: audio.get_title().to_string(),
                     };
                 }
                 Err(e) => {
@@ -63,14 +65,16 @@ pub fn handle(
                         playing_audio.purple(),
                         quote = "\"".purple()
                     );
-                    return protocol::Response::Next { playing_audio: playing_audio.to_string() };
-                },
+                    return protocol::Response::Next {
+                        playing_audio: playing_audio.to_string(),
+                    };
+                }
                 Err(e) => {
                     log::error!("Failed to advance the playing queue: {}", e.to_string());
                     return protocol::Response::ERROR {
                         message: String::from("Failed to advance the playing queue"),
                     };
-                },
+                }
             };
         }
         protocol::PlayerSubCommand::Pause => {

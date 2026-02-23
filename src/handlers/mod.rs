@@ -1,7 +1,7 @@
+mod player_h;
 mod reload_h;
 mod search_h;
 mod status_h;
-mod player_h;
 use crate::{player, protocol};
 
 pub fn handle(request: protocol::Request, player: &mut player::Player) -> protocol::Response {

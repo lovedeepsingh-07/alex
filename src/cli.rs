@@ -15,16 +15,16 @@ pub struct CliArgs {
 
 #[derive(Debug, clap::Subcommand, PartialEq)]
 pub enum SubCommand {
-    /// Start the daemon by providing the path to your songs folder
+    /// Start the daemon by providing the path to your music folder
     Daemon { root_folder_path: String },
     /// Get information such as which song is playing, whether playback is paused or not etc
     Status {
         #[command(subcommand)]
         sub_command: Option<StatusSubCommand>,
     },
-    /// Reload the audio index to reflect any changes to the folder
+    /// Reload the audio storage to reflect any changes to the music folder
     Reload,
-    /// Search through the audio index
+    /// Search through the audio storage
     Search { search_term: Option<String> },
     /// Play an audio
     Play { input: String },
@@ -47,7 +47,7 @@ pub enum StatusSubCommand {
     /// Is the playing queue empty ?
     IsQueueEmpty,
     /// Queue
-    Queue
+    Queue,
 }
 
 pub fn generate_request(sub_command: &SubCommand) -> Result<protocol::Request, error::Error> {

@@ -18,7 +18,7 @@ pub struct SearchResult {
 
 #[derive(Debug, bitcode::Encode, bitcode::Decode)]
 pub enum Response {
-    PlaybackStarted { id: player::AudioID },
+    PlaybackStarted { title: String },
     Next { playing_audio: player::AudioID },
     Paused,
     Resumed,

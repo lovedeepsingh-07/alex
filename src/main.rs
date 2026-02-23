@@ -77,8 +77,12 @@ async fn handle_response(
     response: protocol::Response,
 ) -> Result<(), error::Error> {
     match response {
-        protocol::Response::PlaybackStarted { id } => {
-            println!("> Playing {}", id.purple());
+        protocol::Response::PlaybackStarted { title } => {
+            println!(
+                "> Playing {quote}{}{quote}",
+                title.purple(),
+                quote = "\"".purple()
+            );
         }
         protocol::Response::Next { playing_audio } => {
             println!("> Playing {}", playing_audio.purple());
@@ -139,7 +143,7 @@ fn handle_status_response(
             Some(cli::StatusSubCommand::Queue) => match cli_args.just_info {
                 true => print!("{:?}", status_data.queue),
                 false => println!("> {:#?}", status_data.queue),
-            }
+            },
             None => match cli_args.just_info {
                 true => print!("{}", serde_json::to_string(&status_data)?),
                 false => println!("> {:#?}", status_data),

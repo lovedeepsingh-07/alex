@@ -92,7 +92,7 @@ impl Player {
     }
     pub fn next(&mut self) -> Result<(), error::Error> {
         if self.queue.is_empty() {
-            return Ok(())
+            return Ok(());
         }
         let next_audio_id = self.queue.pop_front().ok_or_else(|| {
             error::Error::PlayerError(
