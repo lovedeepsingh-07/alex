@@ -18,7 +18,7 @@ impl Engine {
     pub fn new() -> Result<Self, error::Error> {
         let mut output_stream = rodio::OutputStreamBuilder::open_default_stream()?;
         output_stream.log_on_drop(false);
-        let sink = rodio::Sink::connect_new(&output_stream.mixer());
+        let sink = rodio::Sink::connect_new(output_stream.mixer());
 
         Ok(Self {
             output_stream,

@@ -17,7 +17,7 @@ async fn main() {
         match daemon::run(cli_args.port, root_folder_path).await {
             Ok(_) => {}
             Err(e) => {
-                log::error!("Failed to run daemon, {}", e.to_string());
+                log::error!("Failed to run daemon, {}", e);
             }
         }
         return;
@@ -26,10 +26,7 @@ async fn main() {
     let request = match cli::generate_request(&cli_args.sub_command) {
         Ok(out) => out,
         Err(e) => {
-            log::error!(
-                "Failed to generate request from CLI arguments, {}",
-                e.to_string()
-            );
+            log::error!("Failed to generate request from CLI arguments, {}", e);
             return;
         }
     };
@@ -37,7 +34,7 @@ async fn main() {
     match connect(cli_args, request).await {
         Ok(_) => {}
         Err(e) => {
-            log::error!("Failed to communicate with daemon, {}", e.to_string());
+            log::error!("Failed to communicate with daemon, {}", e);
             return;
         }
     };
@@ -100,8 +97,7 @@ async fn handle_response(
             println!("> Player reloaded");
         }
         protocol::Response::SearchResults(search_results) => {
-            let mut search_results_iter = search_results.iter();
-            while let Some(item) = search_results_iter.next() {
+            for item in search_results.iter() {
                 println!("-> {}", item.id);
             }
         }

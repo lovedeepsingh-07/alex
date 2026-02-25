@@ -68,7 +68,7 @@ pub fn generate_request(sub_command: &SubCommand) -> Result<protocol::Request, e
         }
         SubCommand::Play { input } => {
             let id = input.trim().to_string();
-            if id.len() == 0 {
+            if id.is_empty() {
                 return Err(error::Error::InvalidInputError(
                     "You must provide an input with the play command".to_string(),
                 ));
@@ -98,7 +98,7 @@ pub fn generate_request(sub_command: &SubCommand) -> Result<protocol::Request, e
             });
         }
     }
-    return Err(error::Error::IOError(
+    Err(error::Error::IOError(
         "Failed to correctly parse CLI arguments".to_string(),
-    ));
+    ))
 }

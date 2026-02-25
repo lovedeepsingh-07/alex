@@ -15,6 +15,7 @@ rodio = { version = "0.21.1", default-features = false, features = [
   "playback",
   "symphonia-all",
 ] }
+rstest = "0.26.1"
 serde = { version = "1.0.228", features = ["derive"] }
 serde_json = "1.0.148"
 stop-words = "0.9.0"

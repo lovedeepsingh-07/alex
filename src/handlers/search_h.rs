@@ -7,8 +7,7 @@ pub fn handle(player: &mut player::Player, search_term: Option<String>) -> proto
                 "Searching for audio files with term: {:#?}",
                 search_term.as_str()
             );
-            let query_tokens =
-                utils::remove_stop_words(utils::tokenize_string(search_term.as_str()));
+            let query_tokens = utils::tokenize_string(search_term.as_str());
             let candidates = player.storage.get_search_candidates(&query_tokens);
 
             let results: Vec<protocol::SearchResult> = candidates
@@ -31,7 +30,7 @@ pub fn handle(player: &mut player::Player, search_term: Option<String>) -> proto
         None => {
             log::debug!("Searching for audio files");
             let mut results: Vec<protocol::SearchResult> = Vec::new();
-            for (id, _) in player.storage.get_audio_map() {
+            for id in player.storage.get_audio_map().keys() {
                 results.push(protocol::SearchResult {
                     id: id.clone(),
                     score: 0.0,

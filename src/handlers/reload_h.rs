@@ -7,10 +7,7 @@ pub fn handle(player: &mut player::Player) -> protocol::Response {
             return protocol::Response::Reloaded;
         }
         Err(e) => {
-            log::error!(
-                "Failed to reload the player audio storage, {}",
-                e.to_string()
-            );
+            log::error!("Failed to reload the player audio storage, {}", e);
             return protocol::Response::ERROR {
                 message: "Failed to reload the player audio storage".to_string(),
             };
