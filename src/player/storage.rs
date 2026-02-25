@@ -94,8 +94,7 @@ impl Storage {
                 };
 
                 // actual token based indexing
-                let id_tokens =
-                    utils::remove_stop_words(utils::tokenize_string(metadata.id.as_str()));
+                let id_tokens = utils::tokenize_string(metadata.id.as_str());
                 for token in id_tokens.iter() {
                     match storage.index.get_mut(token.as_str()) {
                         Some(id_set) => {

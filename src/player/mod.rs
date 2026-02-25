@@ -90,7 +90,7 @@ impl Player {
     pub fn resume(&mut self) {
         self.engine.resume();
     }
-    pub fn next(&mut self) -> Result<(), error::Error> {
+    pub fn next_audio(&mut self) -> Result<(), error::Error> {
         if self.queue.is_empty() {
             return Ok(());
         }

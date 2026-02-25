@@ -10,7 +10,7 @@ pub fn handle(
             let audio = match player.storage.get_audio(&id) {
                 Ok(out) => out,
                 Err(e) => {
-                    log::error!("Failed to get audio from the storage, {}", e.to_string());
+                    log::error!("Failed to get audio from the storage, {}", e);
                     return protocol::Response::ERROR {
                         message: "Failed to get audio with the corresponding ID from the storage"
                             .to_string(),
@@ -29,7 +29,7 @@ pub fn handle(
                         match player.populate_queue() {
                             Ok(_) => {}
                             Err(e) => {
-                                log::error!("Failed to populate the queue, {}", e.to_string());
+                                log::error!("Failed to populate the queue, {}", e);
                                 return protocol::Response::ERROR {
                                     message: "Failed to populate the queue".to_string(),
                                 };
@@ -41,7 +41,7 @@ pub fn handle(
                     };
                 }
                 Err(e) => {
-                    log::error!("Failed to play the audio: {}", e.to_string());
+                    log::error!("Failed to play the audio: {}", e);
                     return protocol::Response::ERROR {
                         message: String::from("Failed to play the audio"),
                     };
@@ -49,7 +49,7 @@ pub fn handle(
             };
         }
         protocol::PlayerSubCommand::Next => {
-            match player.next() {
+            match player.next_audio() {
                 Ok(_) => {
                     let playing_audio = match player.get_current_audio() {
                         Some(out) => out,
@@ -70,7 +70,7 @@ pub fn handle(
                     };
                 }
                 Err(e) => {
-                    log::error!("Failed to advance the playing queue: {}", e.to_string());
+                    log::error!("Failed to advance the playing queue: {}", e);
                     return protocol::Response::ERROR {
                         message: String::from("Failed to advance the playing queue"),
                     };
