@@ -3,6 +3,7 @@ pub use request::PlayerSubCommand;
 pub use request::Request;
 
 pub mod response;
+pub use response::DisplayAudio;
 pub use response::Response;
 pub use response::SearchResult;
 pub use response::StatusData;

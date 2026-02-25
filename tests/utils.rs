@@ -1,4 +1,4 @@
-use alex::{error, utils, string_vec};
+use alex::{error, string_vec, utils};
 
 #[rstest::rstest]
 #[case("hello", "hello")]

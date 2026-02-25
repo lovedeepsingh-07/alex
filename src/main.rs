@@ -120,9 +120,9 @@ fn handle_status_response(
             Some(cli::StatusSubCommand::CurrentAudio) => {
                 // NOTE: Here we go through all possibilities of (Option<String>, bool)
                 match (status_data.current_audio, cli_args.just_info) {
-                    (Some(current_audio), true) => print!("{}", current_audio),
+                    (Some(current_audio), true) => print!("{}", current_audio.title),
                     (Some(current_audio), false) => {
-                        println!("> Current Audio: {}", current_audio.purple())
+                        println!("> Current Audio: {}", current_audio.title.purple())
                     }
                     (None, true) => print!("NO AUDIO"),
                     (None, false) => println!("> No audio is playing"),
