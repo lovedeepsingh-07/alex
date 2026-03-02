@@ -98,7 +98,7 @@ async fn handle_response(
         }
         protocol::Response::SearchResults(search_results) => {
             for item in search_results.iter() {
-                println!("-> {}", item.id);
+                println!("-> {}: {}", item.title, item.id.blue());
             }
         }
         protocol::Response::StatusData(status_data) => {

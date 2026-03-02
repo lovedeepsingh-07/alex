@@ -15,9 +15,17 @@ pub fn handle(player: &mut player::Player, search_term: Option<String>) -> proto
                 .filter_map(|id| {
                     let score = score_audio(id.as_str(), &search_term, &query_tokens);
                     if score > 0.15 {
+                        let audio = match player.storage.get_audio(id) {
+                            Ok(out) => out,
+                            Err(e) => {
+                                log::warn!("Failed to get audio from the storage, {}", e);
+                                return None;
+                            }
+                        };
                         Some(protocol::SearchResult {
                             id: id.clone(),
                             score,
+                            title: audio.get_title().to_string(),
                         })
                     } else {
                         None
@@ -29,13 +37,16 @@ pub fn handle(player: &mut player::Player, search_term: Option<String>) -> proto
         }
         None => {
             log::debug!("Searching for audio files");
-            let mut results: Vec<protocol::SearchResult> = Vec::new();
-            for id in player.storage.get_audio_map().keys() {
-                results.push(protocol::SearchResult {
+            let results: Vec<protocol::SearchResult> = player
+                .storage
+                .get_audio_map()
+                .iter()
+                .map(|(id, audio)| protocol::SearchResult {
                     id: id.clone(),
                     score: 0.0,
-                });
-            }
+                    title: audio.get_title().to_string(),
+                })
+                .collect();
             return protocol::Response::SearchResults(results);
         }
     }

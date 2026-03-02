@@ -19,6 +19,7 @@ pub struct StatusData {
 pub struct SearchResult {
     pub id: player::AudioID,
     pub score: f64,
+    pub title: String,
 }
 
 #[derive(Debug, bitcode::Encode, bitcode::Decode)]
